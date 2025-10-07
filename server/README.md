@@ -1,4 +1,4 @@
-# Mapee-Server
+# Trinity-Server
 
 ```bash
 npm install

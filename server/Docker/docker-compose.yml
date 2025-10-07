@@ -1,7 +1,7 @@
 name: trinity
 services:
   db:
-    image: postgis/postgis:16-3.5
+    image: postgres:16
     hostname: localhost
     ports:
       - "5438:5432"
