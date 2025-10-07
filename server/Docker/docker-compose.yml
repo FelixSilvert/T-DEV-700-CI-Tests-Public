@@ -1,0 +1,27 @@
+name: mapee
+services:
+  db:
+    image: postgis/postgis:16-3.5
+    hostname: localhost
+    ports:
+      - "5438:5432"
+    expose:
+      - 5432
+    platform: linux/amd64
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mapeeDb
+      POSTGRES_USER: mapee
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password_file
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+    secrets:
+      - db_password_file
+
+secrets:
+  db_password_file:
+    file: ./db_password.txt
+
+volumes:
+  postgis_data:
