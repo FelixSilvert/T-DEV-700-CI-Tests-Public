@@ -1,4 +1,4 @@
-name: mapee
+name: trinity
 services:
   db:
     image: postgis/postgis:16-3.5
@@ -8,11 +8,11 @@ services:
     expose:
       - 5432
     platform: linux/amd64
-    container_name: postgres_db
+    container_name: trinity_db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: mapeeDb
-      POSTGRES_USER: mapee
+      POSTGRES_DB: trinityDb
+      POSTGRES_USER: trinity
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password_file
     volumes:
       - postgis_data:/var/lib/postgresql/data
