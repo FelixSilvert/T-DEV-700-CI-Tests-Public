@@ -30,6 +30,9 @@ export class User {
   @Column({ type: "boolean" })
   isManager: boolean;
 
+  @Column({ name: "IDTeam", type: "uuid", nullable: true })
+  IDTeam: string;
+
   @Column({ type: "boolean" })
   isAdmin: boolean;
 
