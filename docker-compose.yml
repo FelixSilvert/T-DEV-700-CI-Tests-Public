@@ -21,7 +21,7 @@ services:
 
 secrets:
   db_password_file:
-    file: ./db_password.txt
+    file: ./server/Docker/db_password.txt
 
 volumes:
   postgis_data:
