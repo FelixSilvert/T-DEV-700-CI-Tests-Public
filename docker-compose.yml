@@ -1,0 +1,22 @@
+name: trinity
+
+services:
+  db:
+    image: postgres:16
+    platform: linux/amd64
+    container_name: trinity_db
+    restart: unless-stopped
+    hostname: localhost
+    ports:
+      - "5438:5432"
+    expose:
+      - 5432
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+
+volumes:
+  postgis_data:
