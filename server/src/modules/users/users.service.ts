@@ -1,5 +1,12 @@
-import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import * as bcrypt from "bcrypt";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
@@ -16,20 +23,44 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto) {
     try {
+      const { email, password, phoneNumber, ...rest } = createUserDto;
+
+      const existingMail = await this.UserRepository.findOne({
+        where: { email },
+      });
+      if (existingMail) {
+        throw new ConflictException("Email already in use");
+      }
+
+      const existingPhoneNumber = await this.UserRepository.findOne({
+        where: { phoneNumber },
+      });
+      if (existingPhoneNumber) {
+        throw new ConflictException("PhoneNumber already in use");
+      }
+
+      const saltRounds = parseInt(process.env.SALT_ROUNDS || "10", 10);
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
       const newUser = this.UserRepository.create({
-        ...createUserDto,
+        email,
+        password: hashedPassword,
+        phoneNumber,
+        ...rest,
       });
 
       await this.UserRepository.save(newUser);
 
       return {
-        message: "User created",
+        message: "User created successfully",
       };
     } catch (error) {
-      this.logger.log("error : ", error);
+      this.logger.error("Error creating user:", error);
+
+      if (error instanceof HttpException) throw error;
 
       throw new HttpException(
-        "An error occurred",
+        "An unexpected error occurred",
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
@@ -75,14 +106,41 @@ export class UsersService {
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     try {
-      const user = await this.UserRepository.findOne({
-        where: { id: id },
-      });
+      const { email, password, phoneNumber, ...rest } = updateUserDto;
 
-      if (!user)
+      const user = await this.UserRepository.findOne({ where: { id } });
+      if (!user) {
         throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+      }
 
-      Object.assign(user, updateUserDto);
+      if (email && email !== user.email) {
+        const existingMail = await this.UserRepository.findOne({
+          where: { email },
+        });
+
+        if (existingMail) {
+          throw new ConflictException("Email already in use");
+        }
+        user.email = email;
+      }
+
+      if (phoneNumber && phoneNumber !== user.phoneNumber) {
+        const existingPhoneNumber = await this.UserRepository.findOne({
+          where: { phoneNumber },
+        });
+
+        if (existingPhoneNumber) {
+          throw new ConflictException("PhoneNumber already in use");
+        }
+        user.phoneNumber = phoneNumber;
+      }
+
+      if (password) {
+        const saltRounds = parseInt(process.env.SALT_ROUNDS || "10", 10);
+        user.password = await bcrypt.hash(password, saltRounds);
+      }
+
+      Object.assign(user, rest);
 
       await this.UserRepository.save(user);
 
@@ -90,7 +148,9 @@ export class UsersService {
         message: "User updated successfully",
       };
     } catch (error) {
-      this.logger.log("error : " + error);
+      this.logger.error("Error updating user: ", error);
+
+      if (error instanceof HttpException) throw error;
 
       throw new HttpException(
         "An error occurred",

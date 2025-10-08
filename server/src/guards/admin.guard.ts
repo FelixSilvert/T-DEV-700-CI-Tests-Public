@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from "@nestjs/common";
 
 @Injectable()
@@ -17,8 +18,8 @@ export class AdminGuard implements CanActivate {
       throw new ForbiddenException("Utilisateur non authentifié");
     }
 
-    if (!user.isAdmin) {
-      throw new ForbiddenException("Accès réservé aux administrateurs");
+    if (!user || !user.isAdmin) {
+      throw new UnauthorizedException("Accès réservé aux administrateurs");
     }
 
     return true;
