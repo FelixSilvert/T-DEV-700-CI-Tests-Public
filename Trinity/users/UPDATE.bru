@@ -1,0 +1,31 @@
+meta {
+  name: UPDATE
+  type: http
+  seq: 4
+}
+
+put {
+  url: http://localhost:3000/api/users/:id
+  body: json
+  auth: inherit
+}
+
+params:path {
+  id: 0d8b0da2-7512-4748-94bd-73148b23bd0e
+}
+
+body:json {
+  {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.do@email.com",
+    "phoneNumber": "+33 6 12 13 14 55",
+    "password": "StrongPassword123?",
+    "isManager": false,
+    "isAdmin": true
+  }
+}
+
+settings {
+  encodeUrl: true
+}
