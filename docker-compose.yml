@@ -1,27 +1,22 @@
 name: trinity
+
 services:
   db:
     image: postgres:16
+    platform: linux/amd64
+    container_name: trinity_db
+    restart: unless-stopped
     hostname: localhost
     ports:
       - "5438:5432"
     expose:
       - 5432
-    platform: linux/amd64
-    container_name: trinity_db
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: trinityDb
-      POSTGRES_USER: trinity
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password_file
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgis_data:/var/lib/postgresql/data
-    secrets:
-      - db_password_file
-
-secrets:
-  db_password_file:
-    file: ./server/Docker/db_password.txt
 
 volumes:
   postgis_data:
