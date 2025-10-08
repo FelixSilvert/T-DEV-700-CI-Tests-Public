@@ -15,7 +15,7 @@ services:
       POSTGRES_USER: trinity
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password_file
     volumes:
-      - postgis_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     secrets:
       - db_password_file
 
@@ -24,4 +24,4 @@ secrets:
     file: ./db_password.txt
 
 volumes:
-  postgis_data:
+  postgres_data:
