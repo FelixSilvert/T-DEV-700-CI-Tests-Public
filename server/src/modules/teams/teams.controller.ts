@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Put,
@@ -19,7 +18,7 @@ import { UpdateTeamDto } from "./dto/update-team.dto";
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
-  @UseGuards(ManagerGuard)
+  // @UseGuards(ManagerGuard)
   @Post()
   @ApiOperation({
     summary: "Route protected by manager guards",
@@ -46,7 +45,7 @@ export class TeamsController {
   findOne(@Param("id") id: string) {
     return this.teamsService.findOne(id);
   }
-
+  
   @Put(":id")
   @ApiOperation({
     summary: "Route not protected by guards",

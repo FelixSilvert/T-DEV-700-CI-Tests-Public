@@ -100,7 +100,7 @@ export class TeamsService {
     }
   }
 
-  async remove(id: string) {
+  async delete(id: string) {
     try {
       const team = await this.TeamRepository.findOne({
         where: { id: id },

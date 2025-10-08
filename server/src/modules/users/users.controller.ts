@@ -44,6 +44,15 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @Get(":id/members")
+  @ApiOperation({
+    summary: "Route not protected by guards",
+    description: "Allows you to get all teams.",
+  })
+  findAllByIDTeam(@Param("id") id: string) {
+    return this.usersService.findAllByIDTeam(id);
+  }
+
   @Put(":id")
   @ApiOperation({
     summary: "Route not protected by guards",
