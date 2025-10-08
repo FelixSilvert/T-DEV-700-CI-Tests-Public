@@ -14,7 +14,7 @@ export class User {
   @Column({ type: "varchar" })
   email: string;
 
-  @Column({ type: "integer" })
+  @Column({ type: "varchar" })
   phoneNumber: number;
 
   @Column({ type: "varchar" })

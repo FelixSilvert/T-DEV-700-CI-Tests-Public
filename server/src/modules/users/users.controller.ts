@@ -6,10 +6,8 @@ import {
   Param,
   Post,
   Put,
-  UseGuards,
 } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
-import { AdminGuard } from "src/guards/admin.guard";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UsersService } from "./users.service";
@@ -18,7 +16,7 @@ import { UsersService } from "./users.service";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(AdminGuard)
+  //@UseGuards(AdminGuard)
   @Post()
   @ApiOperation({
     summary: "Route protected by admin guards",
