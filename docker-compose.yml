@@ -3,20 +3,27 @@ name: trinity
 services:
   db:
     image: postgres:16
-    platform: linux/amd64
     container_name: trinity_db
     restart: unless-stopped
-    hostname: localhost
     ports:
-      - "5438:5432"
-    expose:
-      - 5432
-    environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      - "5433:5432"
+    env_file:
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+  back:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: trinity-back
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    env_file:
+      - .env
+    depends_on:
+      - db
 
 volumes:
   postgres_data:
