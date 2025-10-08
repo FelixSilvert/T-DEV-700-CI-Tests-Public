@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Team } from "src/modules/teams/entities/team.entity";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
 
 @Entity("users")
 export class User {
@@ -25,4 +32,8 @@ export class User {
 
   @Column({ type: "boolean" })
   isAdmin: boolean;
+
+  @ManyToOne(() => Team, (team) => team.members)
+  @JoinColumn({ name: "IDTeam" })
+  team: Team;
 }

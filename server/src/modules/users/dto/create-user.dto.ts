@@ -23,7 +23,7 @@ export class CreateUserDto {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ example: "06 00 00 00 00", required: true })
+  @ApiProperty({ example: "+33 6 00 00 00 00", required: true })
   @IsPhoneNumber()
   @IsNotEmpty()
   phoneNumber: number;
