@@ -3,20 +3,47 @@ name: trinity
 services:
   db:
     image: postgres:16
-    platform: linux/amd64
-    container_name: trinity_db
+    container_name: trinity-db
     restart: unless-stopped
-    hostname: localhost
     ports:
-      - "5438:5432"
-    expose:
-      - 5432
-    environment:
-      POSTGRES_DB: ${DB_DATABASE}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      - ${DB_EXTERNAL_PORT}:5432
+    env_file:
+      - ./server/.env
     volumes:
-      - postgis_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
+
+  back:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: trinity-back
+    restart: unless-stopped
+    ports:
+      - ${BACKEND_EXTERNAL_PORT}:3000
+    env_file:
+      - .env
+      - ./server/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
 
 volumes:
-  postgis_data:
+  postgres_data:
