@@ -1,24 +1,22 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  Put,
-  UseGuards,
+  Get,
+  Param,
+  Post,
+  Put
 } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
-import { ManagerGuard } from "src/guards/manager.guard";
-import { TeamsService } from "./teams.service";
+
 import { CreateTeamDto } from "./dto/create-team.dto";
 import { UpdateTeamDto } from "./dto/update-team.dto";
+import { TeamsService } from "./teams.service";
 
 @Controller("teams")
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
-  // @UseGuards(ManagerGuard)
   @Post()
   @ApiOperation({
     summary: "Route protected by manager guards",

@@ -1,5 +1,5 @@
-import { ValidationPipe } from "@nestjs/common";
-import { NestFactory } from "@nestjs/core";
+import { ClassSerializerInterceptor, ValidationPipe } from "@nestjs/common";
+import { NestFactory, Reflector } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import * as bodyParser from "body-parser";
 import { AppModule } from "./app.module";
@@ -18,12 +18,19 @@ async function bootstrap() {
 
   app.use(bodyParser.json({ limit: "10mb" }));
   app.setGlobalPrefix("api");
-  app.useGlobalPipes(new ValidationPipe());
-  app.enableCors({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true,
-  });
+  
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  app.enableCors();
+
   await app.listen(process.env.PORT ?? 3000);
 }
 

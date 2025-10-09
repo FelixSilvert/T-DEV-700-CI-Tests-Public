@@ -1,3 +1,4 @@
+import { Exclude } from "class-transformer";
 import { Team } from "src/modules/teams/entities/team.entity";
 import {
   Column,
@@ -6,6 +7,13 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
+
+export enum UserRole {
+  USER = 'user',
+  MANAGER = 'manager',
+  ADMIN = 'admin',
+}
+
 
 @Entity("users")
 export class User {
@@ -25,13 +33,15 @@ export class User {
   phoneNumber: number;
 
   @Column({ type: "varchar" })
+  @Exclude()
   password: string;
 
-  @Column({ type: "boolean" })
-  isManager: boolean;
-
-  @Column({ type: "boolean" })
-  isAdmin: boolean;
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.USER,
+  })
+  role: UserRole;
 
   @Column({ name: "IDTeam", type: "uuid", nullable: true })
   IDTeam: string;

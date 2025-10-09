@@ -67,7 +67,7 @@ export class UsersService {
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<User[]> {
     try {
       const users = await this.UserRepository.find();
 
@@ -85,7 +85,7 @@ export class UsersService {
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<User | null>{
     try {
       const user = await this.UserRepository.findOne({
         where: { id: id },
@@ -105,7 +105,7 @@ export class UsersService {
     }
   }
 
-  async findAllByIDTeam(id: string) {
+  async findAllByIDTeam(id: string): Promise<User[]> {
     try {
       const users = await this.UserRepository.find({
         where: { team: { id } },
@@ -218,10 +218,28 @@ export class UsersService {
       await this.UserRepository.save(user);
 
       return {
-        message: updateRoleDto.isManager
-          ? "User granted to Manager successfully."
-          : "User role updated successfully.",
+        message: "User role updated successfully.",
       };
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    try {
+      const user = await this.UserRepository.findOne({ 
+      where: { email: email } 
+    });
+
+    if(!user)
+      throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+
+    return user;
     } catch (error) {
       this.logger.log("error : ", error);
 
