@@ -104,6 +104,26 @@ export class UsersService {
     }
   }
 
+  async findAllByIDTeam(id: string) {
+    try {
+      const users = await this.UserRepository.find({
+        where: { team: { id } },
+      });
+
+      if (!users)
+        throw new HttpException("No users found", HttpStatus.NOT_FOUND);
+
+      return users;
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     try {
       const { email, password, phoneNumber, ...rest } = updateUserDto;

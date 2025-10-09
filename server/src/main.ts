@@ -11,7 +11,7 @@ async function bootstrap() {
     .setTitle("Trinity")
     .setDescription("api documentation")
     .setVersion("1.0")
-    .addTag("find toilet")
+    .addTag("trinity")
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, document);

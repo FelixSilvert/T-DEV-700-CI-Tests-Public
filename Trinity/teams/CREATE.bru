@@ -1,0 +1,23 @@
+meta {
+  name: CREATE
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3000/api/teams
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "name": "Trinity",
+    "description": "Trinity project",
+    "managerId": "998c0961-cb69-43d8-8d8b-0eaf6a2e9412"
+  }
+}
+
+settings {
+  encodeUrl: true
+}
