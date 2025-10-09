@@ -6,9 +6,9 @@ services:
     container_name: trinity-db
     restart: unless-stopped
     ports:
-      - "5433:5432"
+      - ${DB_EXTERNAL_PORT}:5432
     env_file:
-      - .env
+      - ./server/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -31,9 +31,10 @@ services:
     container_name: trinity-back
     restart: unless-stopped
     ports:
-      - 3000:3000
+      - ${BACKEND_EXTERNAL_PORT}:3000
     env_file:
       - .env
+      - ./server/.env
     depends_on:
       db:
         condition: service_healthy
