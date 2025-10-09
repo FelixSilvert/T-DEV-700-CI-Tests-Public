@@ -4,11 +4,13 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
 } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateRoleDto } from "./dto/update-role.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UsersService } from "./users.service";
 
@@ -16,10 +18,10 @@ import { UsersService } from "./users.service";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  //@UseGuards(AdminGuard)
+  //@UseGuards(ManagerGuard)
   @Post()
   @ApiOperation({
-    summary: "Route protected by admin guards",
+    summary: "Route protected by manager guards",
     description: "Allows you to create a user.",
   })
   create(@Body() createUserDto: CreateUserDto) {
@@ -69,5 +71,15 @@ export class UsersController {
   })
   delete(@Param("id") id: string) {
     return this.usersService.delete(id);
+  }
+
+  //@UseGuards(AdminGuard)
+  @Patch(":id")
+  @ApiOperation({
+    summary: "Route protected by admin guards",
+    description: "Allows you to update the role of a user by is id.",
+  })
+  updateRole(@Param("id") id: string, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.usersService.updateRole(id, updateRoleDto);
   }
 }

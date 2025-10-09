@@ -30,11 +30,11 @@ export class User {
   @Column({ type: "boolean" })
   isManager: boolean;
 
-  @Column({ name: "IDTeam", type: "uuid", nullable: true })
-  IDTeam: string;
-
   @Column({ type: "boolean" })
   isAdmin: boolean;
+
+  @Column({ name: "IDTeam", type: "uuid", nullable: true })
+  IDTeam: string;
 
   @ManyToOne(() => Team, (team) => team.members)
   @JoinColumn({ name: "IDTeam" })
