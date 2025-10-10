@@ -4,6 +4,7 @@ import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import { DatabaseModule } from "./modules/database/database.module";
 import { UsersModule } from "./modules/users/users.module";
+import { TeamsModule } from "./modules/teams/teams.module";
 import { join } from "path";
 
 @Module({
@@ -14,6 +15,7 @@ import { join } from "path";
     }),
     DatabaseModule,
     UsersModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
