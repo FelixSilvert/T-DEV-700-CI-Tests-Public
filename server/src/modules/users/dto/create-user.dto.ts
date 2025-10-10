@@ -1,10 +1,11 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsUUID } from "class-validator";
 import {
   IsNotEmpty,
+  IsOptional,
   IsPhoneNumber,
   IsString,
   IsStrongPassword,
+  IsUUID,
 } from "class-validator";
 
 export class CreateUserDto {
@@ -35,8 +36,9 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
-    required: true,
+    required: false,
   })
   @IsUUID()
+  @IsOptional()
   IDTeam: string;
 }
