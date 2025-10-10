@@ -12,7 +12,6 @@ import {
 import { ApiOperation } from "@nestjs/swagger";
 import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
 import { RolesGuard } from "src/guards/roles.guard";
-import { Public } from "../auth/decorators/public.decorator";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
@@ -35,7 +34,6 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @Public()
   @Get()
   @ApiOperation({
     summary: "Route not protected by guards",
@@ -90,5 +88,13 @@ export class UsersController {
   updateRole(@Param("id") id: string, @Body() updateRoleDto: UpdateRoleDto) {
     return this.usersService.updateRole(id, updateRoleDto);
   }
-    
+
+  @Get(":id/clocks")
+  @ApiOperation({
+    summary: "Route not protected by guards",
+    description: "Allows you to get all clocks of a user.",
+  })
+  findAllByIDUser(@Param("id") id: string) {
+    return this.usersService.findAllByIDUser(id);
+  }
 }

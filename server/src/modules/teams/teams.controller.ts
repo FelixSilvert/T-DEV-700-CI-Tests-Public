@@ -5,14 +5,17 @@ import {
   Get,
   Param,
   Post,
-  Put
+  Put,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
-
 import { CreateTeamDto } from "./dto/create-team.dto";
 import { UpdateTeamDto } from "./dto/update-team.dto";
 import { TeamsService } from "./teams.service";
+import { RolesGuard } from "src/guards/roles.guard";
+import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("teams")
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
@@ -43,7 +46,7 @@ export class TeamsController {
   findOne(@Param("id") id: string) {
     return this.teamsService.findOne(id);
   }
-  
+
   @Put(":id")
   @ApiOperation({
     summary: "Route not protected by guards",

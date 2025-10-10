@@ -1,19 +1,20 @@
 import { Exclude } from "class-transformer";
 import { Team } from "src/modules/teams/entities/team.entity";
+import { Clock } from "src/modules/clocks/entities/clock.entity";
 import {
   Column,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
 export enum UserRole {
-  USER = 'user',
-  MANAGER = 'manager',
-  ADMIN = 'admin',
+  USER = "user",
+  MANAGER = "manager",
+  ADMIN = "admin",
 }
-
 
 @Entity("users")
 export class User {
@@ -37,7 +38,7 @@ export class User {
   password: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: UserRole,
     default: UserRole.USER,
   })
@@ -49,4 +50,7 @@ export class User {
   @ManyToOne(() => Team, (team) => team.members)
   @JoinColumn({ name: "IDTeam" })
   team: Team;
+
+  @OneToMany(() => Clock, (clock) => clock.user)
+  clocks: Clock[];
 }
