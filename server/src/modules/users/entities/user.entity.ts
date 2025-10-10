@@ -1,10 +1,12 @@
 import { Exclude } from "class-transformer";
 import { Team } from "src/modules/teams/entities/team.entity";
+import { Clock } from "src/modules/clocks/entities/clock.entity";
 import {
   Column,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
@@ -49,4 +51,7 @@ export class User {
   @ManyToOne(() => Team, (team) => team.members)
   @JoinColumn({ name: "IDTeam" })
   team: Team;
+
+  @OneToMany(() => Clock, (clock) => clock.user)
+  clocks: Clock[];
 }
