@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { UsersService } from '../../users/users.service';
+import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { UsersService } from "../../users/users.service";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -10,10 +10,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private configService: ConfigService,
     private usersService: UsersService,
   ) {
-    const jwtSecret = configService.get<string>('JWT_SECRET');
-    
+    const jwtSecret = configService.get<string>("JWT_SECRET");
+
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET environment variable is not set');
+      throw new Error("JWT_SECRET environment variable is not set");
     }
 
     super({
@@ -25,13 +25,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: any) {
     const user = await this.usersService.findOne(payload.sub);
-    
+
     if (!user) {
-      throw new UnauthorizedException('Utilisateur non trouvé');
+      throw new UnauthorizedException("Utilisateur non trouvé");
     }
 
-    return { 
-      userId: user.id, 
+    return {
+      userId: user.id,
       email: user.email,
       role: user.role,
       firstName: user.firstName,

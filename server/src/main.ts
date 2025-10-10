@@ -18,7 +18,6 @@ async function bootstrap() {
 
   app.use(bodyParser.json({ limit: "10mb" }));
   app.setGlobalPrefix("api");
-  
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

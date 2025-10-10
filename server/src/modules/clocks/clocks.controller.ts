@@ -1,34 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ClocksService } from './clocks.service';
-import { CreateClockDto } from './dto/create-clock.dto';
-import { UpdateClockDto } from './dto/update-clock.dto';
+import { Controller, Post, Body, UseGuards } from "@nestjs/common";
+import { ClocksService } from "./clocks.service";
+import { CreateClockDto } from "./dto/create-clock.dto";
+import { ApiOperation } from "@nestjs/swagger";
+import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
+import { RolesGuard } from "src/guards/roles.guard";
 
-@Controller('clocks')
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller("clocks")
 export class ClocksController {
   constructor(private readonly clocksService: ClocksService) {}
 
   @Post()
+  @ApiOperation({
+    summary: "Route protected by roles guards",
+    description: "Allows you to create a user.",
+  })
   create(@Body() createClockDto: CreateClockDto) {
     return this.clocksService.create(createClockDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.clocksService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.clocksService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateClockDto: UpdateClockDto) {
-    return this.clocksService.update(+id, updateClockDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.clocksService.remove(+id);
   }
 }

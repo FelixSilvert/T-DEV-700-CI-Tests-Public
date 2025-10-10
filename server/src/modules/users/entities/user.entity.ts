@@ -11,11 +11,10 @@ import {
 } from "typeorm";
 
 export enum UserRole {
-  USER = 'user',
-  MANAGER = 'manager',
-  ADMIN = 'admin',
+  USER = "user",
+  MANAGER = "manager",
+  ADMIN = "admin",
 }
-
 
 @Entity("users")
 export class User {
@@ -39,7 +38,7 @@ export class User {
   password: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: UserRole,
     default: UserRole.USER,
   })

@@ -1,26 +1,37 @@
-import { Injectable } from '@nestjs/common';
-import { CreateClockDto } from './dto/create-clock.dto';
-import { UpdateClockDto } from './dto/update-clock.dto';
+import { HttpException, HttpStatus, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { Clock } from "./entities/clock.entity";
+import { Injectable } from "@nestjs/common";
+import { CreateClockDto } from "./dto/create-clock.dto";
 
 @Injectable()
 export class ClocksService {
-  create(createClockDto: CreateClockDto) {
-    return 'This action adds a new clock';
-  }
+  private readonly logger = new Logger(ClocksService.name);
 
-  findAll() {
-    return `This action returns all clocks`;
-  }
+  constructor(
+    @InjectRepository(Clock)
+    private readonly ClockRepository: Repository<Clock>,
+  ) {}
 
-  findOne(id: number) {
-    return `This action returns a #${id} clock`;
-  }
+  async create(createClockDto: CreateClockDto) {
+    try {
+      const newClock = this.ClockRepository.create({
+        ...createClockDto,
+      });
 
-  update(id: number, updateClockDto: UpdateClockDto) {
-    return `This action updates a #${id} clock`;
-  }
+      await this.ClockRepository.save(newClock);
 
-  remove(id: number) {
-    return `This action removes a #${id} clock`;
+      return {
+        message: "Clock created",
+      };
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

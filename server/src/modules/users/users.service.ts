@@ -12,6 +12,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { User } from "./entities/user.entity";
+import { Clock } from "../clocks/entities/clock.entity";
 
 @Injectable()
 export class UsersService {
@@ -20,6 +21,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly UserRepository: Repository<User>,
+    @InjectRepository(Clock)
+    private readonly ClockRepository: Repository<Clock>,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -85,7 +88,7 @@ export class UsersService {
     }
   }
 
-  async findOne(id: string): Promise<User | null>{
+  async findOne(id: string): Promise<User | null> {
     try {
       const user = await this.UserRepository.findOne({
         where: { id: id },
@@ -232,14 +235,34 @@ export class UsersService {
 
   async findByEmail(email: string): Promise<User | null> {
     try {
-      const user = await this.UserRepository.findOne({ 
-      where: { email: email } 
-    });
+      const user = await this.UserRepository.findOne({
+        where: { email: email },
+      });
 
-    if(!user)
-      throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+      if (!user)
+        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
 
-    return user;
+      return user;
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findAllByIDUser(id: string): Promise<Clock[]> {
+    try {
+      const clocks = await this.ClockRepository.find({
+        where: { user: { id } },
+      });
+
+      if (!clocks)
+        throw new HttpException("No clocks found", HttpStatus.NOT_FOUND);
+
+      return clocks;
     } catch (error) {
       this.logger.log("error : ", error);
 

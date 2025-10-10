@@ -15,6 +15,9 @@ export class Clock {
   @Column({ type: "timestamp" })
   date: Date;
 
+  @Column({ name: "IDUser", type: "uuid", nullable: true })
+  IDUser: string;
+
   @ManyToOne(() => User, (user) => user.clocks)
   @JoinColumn({ name: "IDUser" })
   user: User;
