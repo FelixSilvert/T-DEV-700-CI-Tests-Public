@@ -1,0 +1,70 @@
+# Upstreams disabled: nginx can't use ${VAR} in upstream blocks
+# upstream backend {
+#     server trinity-back:3000 max_fails=3 fail_timeout=30s;
+#     keepalive 32;
+# }
+
+# upstream frontend {
+#     server trinity-front:5173 max_fails=3 fail_timeout=30s;
+#     keepalive 32;
+# }
+
+server {
+    # Logs
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log warn;
+
+    listen ${NGINX_INTERNAL_PORT};
+    server_name ${SERVER_NAME};
+
+    # Health check
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+
+    # Nginx status
+    location /nginx_status {
+        stub_status;
+        access_log off;
+        allow 127.0.0.1;
+        allow ${DOCKER_NETWORK_SUBNET};
+        deny all;
+    }
+
+    # Back
+    location /api {
+        proxy_pass http://${BACKEND_HOST}:${BACKEND_INTERNAL_PORT}/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Front (later)
+    # location / {
+    #     proxy_pass http://${FRONTEND_HOST}:${FRONTEND_INTERNAL_PORT}/;
+    #     proxy_http_version 1.1;
+    #     proxy_set_header Connection "";
+    #     proxy_set_header Upgrade $http_upgrade;
+    #     proxy_set_header Connection $connection_upgrade;
+    #     proxy_set_header Host $host;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     proxy_cache_bypass $http_upgrade;
+        
+    #     proxy_connect_timeout 5s;
+    #     proxy_send_timeout 60s;
+    #     proxy_read_timeout 60s;
+    # }
+}

@@ -7,12 +7,13 @@ import { UsersModule } from "./modules/users/users.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClocksModule } from "./modules/clocks/clocks.module";
+import { join } from "path";
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ".env",
+      envFilePath: [join(__dirname, "..", "..", ".env")],
     }),
     DatabaseModule,
     UsersModule,
