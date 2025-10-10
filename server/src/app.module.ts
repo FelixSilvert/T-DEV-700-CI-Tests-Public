@@ -5,6 +5,8 @@ import { AppService } from "./app.service";
 import { DatabaseModule } from "./modules/database/database.module";
 import { UsersModule } from "./modules/users/users.module";
 import { TeamsModule } from "./modules/teams/teams.module";
+import { AuthModule } from "./modules/auth/auth.module";
+import { ClocksModule } from "./modules/clocks/clocks.module";
 import { join } from "path";
 
 @Module({
@@ -16,6 +18,8 @@ import { join } from "path";
     DatabaseModule,
     UsersModule,
     TeamsModule,
+    AuthModule,
+    ClocksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

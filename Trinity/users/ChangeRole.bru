@@ -1,17 +1,23 @@
 meta {
-  name: GET one
+  name: ChangeRole
   type: http
-  seq: 4
+  seq: 6
 }
 
-get {
+patch {
   url: http://localhost:3000/api/users/:id
-  body: none
-  auth: none
+  body: json
+  auth: inherit
 }
 
 params:path {
   id: 3f671e49-4b97-40c9-bfdd-0e3fc3cffc56
+}
+
+body:json {
+  {
+    "role": "manager"
+  }
 }
 
 settings {

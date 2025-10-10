@@ -4,22 +4,30 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
+  UseGuards,
 } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
+import { JwtAuthGuard } from "src/guards/jwt-auth.guard";
+import { RolesGuard } from "src/guards/roles.guard";
+import { Roles } from "../auth/decorators/roles.decorator";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateRoleDto } from "./dto/update-role.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
+import { UserRole } from "./entities/user.entity";
 import { UsersService } from "./users.service";
 
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller("users")
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  //@UseGuards(AdminGuard)
   @Post()
+  @Roles(UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({
-    summary: "Route protected by admin guards",
+    summary: "Route protected by roles guards",
     description: "Allows you to create a user.",
   })
   create(@Body() createUserDto: CreateUserDto) {
@@ -47,7 +55,7 @@ export class UsersController {
   @Get(":id/members")
   @ApiOperation({
     summary: "Route not protected by guards",
-    description: "Allows you to get all teams.",
+    description: "Allows you to get all members of a teams.",
   })
   findAllByIDTeam(@Param("id") id: string) {
     return this.usersService.findAllByIDTeam(id);
@@ -69,5 +77,24 @@ export class UsersController {
   })
   delete(@Param("id") id: string) {
     return this.usersService.delete(id);
+  }
+
+  @Patch(":id")
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: "Route protected by role + auth guards",
+    description: "Allows you to update the role of a user by is id.",
+  })
+  updateRole(@Param("id") id: string, @Body() updateRoleDto: UpdateRoleDto) {
+    return this.usersService.updateRole(id, updateRoleDto);
+  }
+
+  @Get(":id/clocks")
+  @ApiOperation({
+    summary: "Route not protected by guards",
+    description: "Allows you to get all clocks of a user.",
+  })
+  findAllByIDUser(@Param("id") id: string) {
+    return this.usersService.findAllByIDUser(id);
   }
 }

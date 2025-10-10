@@ -9,8 +9,10 @@ import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateRoleDto } from "./dto/update-role.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { User } from "./entities/user.entity";
+import { Clock } from "../clocks/entities/clock.entity";
 
 @Injectable()
 export class UsersService {
@@ -19,6 +21,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly UserRepository: Repository<User>,
+    @InjectRepository(Clock)
+    private readonly ClockRepository: Repository<Clock>,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -66,7 +70,7 @@ export class UsersService {
     }
   }
 
-  async findAll() {
+  async findAll(): Promise<User[]> {
     try {
       const users = await this.UserRepository.find();
 
@@ -84,7 +88,7 @@ export class UsersService {
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<User | null> {
     try {
       const user = await this.UserRepository.findOne({
         where: { id: id },
@@ -104,7 +108,7 @@ export class UsersService {
     }
   }
 
-  async findAllByIDTeam(id: string) {
+  async findAllByIDTeam(id: string): Promise<User[]> {
     try {
       const users = await this.UserRepository.find({
         where: { team: { id } },
@@ -193,6 +197,72 @@ export class UsersService {
       return {
         message: "User deleted successfully",
       };
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateRole(id: string, updateRoleDto: UpdateRoleDto) {
+    try {
+      const user = await this.UserRepository.findOne({
+        where: { id: id },
+      });
+
+      if (!user)
+        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+
+      Object.assign(user, updateRoleDto);
+
+      await this.UserRepository.save(user);
+
+      return {
+        message: "User role updated successfully.",
+      };
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    try {
+      const user = await this.UserRepository.findOne({
+        where: { email: email },
+      });
+
+      if (!user)
+        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+
+      return user;
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async findAllByIDUser(id: string): Promise<Clock[]> {
+    try {
+      const clocks = await this.ClockRepository.find({
+        where: { user: { id } },
+      });
+
+      if (!clocks)
+        throw new HttpException("No clocks found", HttpStatus.NOT_FOUND);
+
+      return clocks;
     } catch (error) {
       this.logger.log("error : ", error);
 
