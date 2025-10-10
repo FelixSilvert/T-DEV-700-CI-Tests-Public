@@ -1,6 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
 import {
-  IsBoolean,
   IsNotEmpty,
   IsPhoneNumber,
   IsString,
@@ -32,14 +31,4 @@ export class CreateUserDto {
   @IsStrongPassword()
   @IsNotEmpty()
   password: string;
-
-  @ApiProperty({ example: "true", required: true })
-  @IsBoolean()
-  @IsNotEmpty()
-  isManager: boolean;
-
-  @ApiProperty({ example: "false", required: true })
-  @IsBoolean()
-  @IsNotEmpty()
-  isAdmin: boolean;
 }

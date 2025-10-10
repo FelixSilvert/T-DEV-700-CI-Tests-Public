@@ -8,16 +8,21 @@ import { TypeOrmModule } from "@nestjs/typeorm";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
+        const isProduction = config.get<string>("NODE_ENV") === "production";
         return {
           type: "postgres",
-          host: config.get("DB_HOST"),
-          port: config.get("DB_PORT"),
-          username: config.get("DB_USER"),
-          password: config.get("DB_PASSWORD"),
-          database: config.get("DB_DATABASE"),
-          entities: [__dirname + "/../**/*.entity{.ts,.js}"],
-          synchronize: true,
-          ssl: false,
+          host: config.get<string>("DB_HOST"),
+          port: config.get<number>("DB_PORT"),
+          username: config.get<string>("DB_USER"),
+          password: config.get<string>("DB_PASSWORD"),
+          database: config.get<string>("DB_DATABASE"),
+          autoLoadEntities: true,
+          synchronize: !isProduction,
+          // SSL selon l'environnement
+          ssl: isProduction
+            ? { rejectUnauthorized: false } // Prod: SSL activé
+            : false, // Dev: pas besoin de SSL
+          logging: !isProduction ? ["query", "error"] : ["error"],
         };
       },
     }),

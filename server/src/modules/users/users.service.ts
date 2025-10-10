@@ -9,6 +9,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
 import { Repository } from "typeorm";
 import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateRoleDto } from "./dto/update-role.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { User } from "./entities/user.entity";
 
@@ -192,6 +193,34 @@ export class UsersService {
 
       return {
         message: "User deleted successfully",
+      };
+    } catch (error) {
+      this.logger.log("error : ", error);
+
+      throw new HttpException(
+        "An error occurred",
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async updateRole(id: string, updateRoleDto: UpdateRoleDto) {
+    try {
+      const user = await this.UserRepository.findOne({
+        where: { id: id },
+      });
+
+      if (!user)
+        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+
+      Object.assign(user, updateRoleDto);
+
+      await this.UserRepository.save(user);
+
+      return {
+        message: updateRoleDto.isManager
+          ? "User granted to Manager successfully."
+          : "User role updated successfully.",
       };
     } catch (error) {
       this.logger.log("error : ", error);
