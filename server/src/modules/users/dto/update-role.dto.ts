@@ -1,9 +1,10 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsNotEmpty } from "class-validator";
+import { IsEnum, IsNotEmpty } from "class-validator";
+import { UserRole } from "../entities/user.entity";
 
 export class UpdateRoleDto {
-  @ApiProperty({ example: "true", required: true })
-  @IsBoolean()
+  @ApiProperty({ example: "USER", required: true })
   @IsNotEmpty()
-  isManager: boolean;
+  @IsEnum(UserRole)
+  role: UserRole;
 }
