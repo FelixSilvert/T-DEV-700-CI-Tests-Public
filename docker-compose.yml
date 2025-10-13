@@ -7,8 +7,10 @@ services:
     restart: unless-stopped
     ports:
       - "${DB_EXTERNAL_PORT:-5433}:${DB_INTERNAL_PORT:-5432}"
-    env_file:
-      - ./server/.env
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -72,8 +74,8 @@ services:
     ports:
       - "${BACKEND_EXTERNAL_PORT:-3000}:${BACKEND_INTERNAL_PORT:-3000}"
     env_file:
-      - .env
       - ./server/.env
+      - .env
     environment:
       DB_PORT: ${DB_INTERNAL_PORT}
     depends_on:
