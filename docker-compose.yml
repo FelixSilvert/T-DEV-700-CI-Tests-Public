@@ -74,6 +74,8 @@ services:
     env_file:
       - .env
       - ./server/.env
+    environment:
+      DB_PORT: ${DB_INTERNAL_PORT}
     depends_on:
       db:
         condition: service_healthy
