@@ -29,26 +29,16 @@ export class UsersService {
     try {
       const { email, password, phoneNumber, role, ...rest } = createUserDto;
 
-      const existingMail = await this.UserRepository.findOne({
-        where: { email },
-      });
-      if (existingMail) {
-        throw new ConflictException("Email already in use");
-      }
+      const existingMail = await this.UserRepository.findOne({ where: { email } });
+      if (existingMail) throw new ConflictException("Email already in use");
 
-      const existingPhoneNumber = await this.UserRepository.findOne({
-        where: { phoneNumber },
-      });
-      if (existingPhoneNumber) {
-        throw new ConflictException("PhoneNumber already in use");
-      }
+      const existingPhoneNumber = await this.UserRepository.findOne({ where: { phoneNumber } });
+      if (existingPhoneNumber) throw new ConflictException("PhoneNumber already in use");
 
       let assignedRole: UserRole = role ?? UserRole.USER;
       const contextUser = (rest as any).requestUser;
-      if (assignedRole === UserRole.ADMIN) {
-        if (!contextUser || contextUser.role !== UserRole.ADMIN) {
-          assignedRole = UserRole.USER;
-        }
+      if (assignedRole === UserRole.ADMIN && (!contextUser || contextUser.role !== UserRole.ADMIN)) {
+        assignedRole = UserRole.USER;
       }
 
       const saltRounds = parseInt(process.env.SALT_ROUNDS || "10", 10);
@@ -64,76 +54,47 @@ export class UsersService {
 
       await this.UserRepository.save(newUser);
 
-      return {
-        message: "User created successfully",
-      };
+      return { message: "User created successfully" };
     } catch (error) {
       this.logger.error("Error creating user:", error);
-
       if (error instanceof HttpException) throw error;
-
-      throw new HttpException(
-        "An unexpected error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   async findAll(): Promise<User[]> {
     try {
       const users = await this.UserRepository.find();
-
-      if (!users)
-        throw new HttpException("No users found", HttpStatus.NOT_FOUND);
-
+      if (!users || users.length === 0) throw new HttpException("No users found", HttpStatus.NOT_FOUND);
       return users;
     } catch (error) {
-      this.logger.log("error : ", error);
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error fetching users:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  async findOne(id: string): Promise<User | null> {
+  async findOne(id: string): Promise<User> {
     try {
-      const user = await this.UserRepository.findOne({
-        where: { id: id },
-      });
-
-      if (!user)
-        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
-
+      const user = await this.UserRepository.findOne({ where: { id } });
+      if (!user) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
       return user;
     } catch (error) {
-      this.logger.log("error : ", error);
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error fetching user:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   async findAllByIDTeam(id: string): Promise<User[]> {
     try {
-      const users = await this.UserRepository.find({
-        where: { team: { id } },
-      });
-
-      if (!users)
-        throw new HttpException("No users found", HttpStatus.NOT_FOUND);
-
+      const users = await this.UserRepository.find({ where: { team: { id } } });
+      if (!users || users.length === 0) throw new HttpException("No users found", HttpStatus.NOT_FOUND);
       return users;
     } catch (error) {
-      this.logger.log("error : ", error);
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error fetching users by team:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -142,29 +103,17 @@ export class UsersService {
       const { email, password, phoneNumber, ...rest } = updateUserDto;
 
       const user = await this.UserRepository.findOne({ where: { id } });
-      if (!user) {
-        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
-      }
+      if (!user) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
 
       if (email && email !== user.email) {
-        const existingMail = await this.UserRepository.findOne({
-          where: { email },
-        });
-
-        if (existingMail) {
-          throw new ConflictException("Email already in use");
-        }
+        const existingMail = await this.UserRepository.findOne({ where: { email } });
+        if (existingMail) throw new ConflictException("Email already in use");
         user.email = email;
       }
 
       if (phoneNumber && phoneNumber !== user.phoneNumber) {
-        const existingPhoneNumber = await this.UserRepository.findOne({
-          where: { phoneNumber },
-        });
-
-        if (existingPhoneNumber) {
-          throw new ConflictException("PhoneNumber already in use");
-        }
+        const existingPhoneNumber = await this.UserRepository.findOne({ where: { phoneNumber } });
+        if (existingPhoneNumber) throw new ConflictException("PhoneNumber already in use");
         user.phoneNumber = phoneNumber;
       }
 
@@ -177,113 +126,64 @@ export class UsersService {
 
       await this.UserRepository.save(user);
 
-      return {
-        message: "User updated successfully",
-      };
+      return { message: "User updated successfully" };
     } catch (error) {
-      this.logger.error("Error updating user: ", error);
-
+      this.logger.error("Error updating user:", error);
       if (error instanceof HttpException) throw error;
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   async delete(id: string) {
     try {
-      const user = await this.UserRepository.findOne({
-        where: { id: id },
-      });
-
-      if (!user)
-        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
-
+      const user = await this.UserRepository.findOne({ where: { id } });
+      if (!user) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
       await this.UserRepository.delete(id);
-
-      return {
-        message: "User deleted successfully",
-      };
+      return { message: "User deleted successfully" };
     } catch (error) {
-      this.logger.log("error : ", error);
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error deleting user:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   async updateRole(id: string, updateRoleDto: UpdateRoleDto) {
     try {
-      const user = await this.UserRepository.findOne({
-        where: { id: id },
-      });
-
-      if (!user)
-        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+      const user = await this.UserRepository.findOne({ where: { id } });
+      if (!user) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
 
       Object.assign(user, updateRoleDto);
-
       await this.UserRepository.save(user);
 
-      return {
-        message: "User role updated successfully.",
-      };
+      return { message: "User role updated successfully" };
     } catch (error) {
-      this.logger.log("error : ", error);
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error updating user role:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<User> {
     try {
-      const user = await this.UserRepository.findOne({
-        where: { email },
-      });
-
-      if (!user) {
-        throw new HttpException("User not found", HttpStatus.NOT_FOUND);
-      }
-
+      const user = await this.UserRepository.findOne({ where: { email } });
+      if (!user) throw new HttpException("User not found", HttpStatus.NOT_FOUND);
       return user;
     } catch (error: any) {
-      this.logger.log("error : ", error);
-
-      if (error instanceof HttpException) {
-        throw error;
-      }
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error fetching user by email:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   async findAllByIDUser(id: string): Promise<Clock[]> {
     try {
-      const clocks = await this.ClockRepository.find({
-        where: { user: { id } },
-      });
-
-      if (!clocks)
-        throw new HttpException("No clocks found", HttpStatus.NOT_FOUND);
-
+      const clocks = await this.ClockRepository.find({ where: { user: { id } } });
+      if (!clocks || clocks.length === 0) throw new HttpException("No clocks found", HttpStatus.NOT_FOUND);
       return clocks;
     } catch (error) {
-      this.logger.log("error : ", error);
-
-      throw new HttpException(
-        "An error occurred",
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.logger.error("Error fetching clocks:", error);
+      if (error instanceof HttpException) throw error;
+      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }
