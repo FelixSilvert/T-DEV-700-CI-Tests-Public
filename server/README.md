@@ -33,6 +33,14 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## 👑 Seed Admin
+
+Pour créer un utilisateur admin de base dans l'application, tu peux lancer la commande suivante :
+
+```bash
+$ npm run seed
+```
+
 ## 🧪 Run tests
 
 ```bash
