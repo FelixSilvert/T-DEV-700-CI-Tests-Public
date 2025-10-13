@@ -11,7 +11,7 @@ import { Repository } from "typeorm";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateRoleDto } from "./dto/update-role.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
-import { User } from "./entities/user.entity";
+import { User, UserRole } from "./entities/user.entity";
 import { Clock } from "../clocks/entities/clock.entity";
 
 @Injectable()
@@ -27,7 +27,7 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto) {
     try {
-      const { email, password, phoneNumber, ...rest } = createUserDto;
+      const { email, password, phoneNumber, role, ...rest } = createUserDto;
 
       const existingMail = await this.UserRepository.findOne({
         where: { email },
@@ -43,6 +43,14 @@ export class UsersService {
         throw new ConflictException("PhoneNumber already in use");
       }
 
+      let assignedRole: UserRole = role ?? UserRole.USER;
+      const contextUser = (rest as any).requestUser;
+      if (assignedRole === UserRole.ADMIN) {
+        if (!contextUser || contextUser.role !== UserRole.ADMIN) {
+          assignedRole = UserRole.USER;
+        }
+      }
+
       const saltRounds = parseInt(process.env.SALT_ROUNDS || "10", 10);
       const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -50,6 +58,7 @@ export class UsersService {
         email,
         password: hashedPassword,
         phoneNumber,
+        role: assignedRole,
         ...rest,
       });
 
@@ -236,15 +245,20 @@ export class UsersService {
   async findByEmail(email: string): Promise<User | null> {
     try {
       const user = await this.UserRepository.findOne({
-        where: { email: email },
+        where: { email },
       });
 
-      if (!user)
+      if (!user) {
         throw new HttpException("User not found", HttpStatus.NOT_FOUND);
+      }
 
       return user;
-    } catch (error) {
+    } catch (error: any) {
       this.logger.log("error : ", error);
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
 
       throw new HttpException(
         "An error occurred",

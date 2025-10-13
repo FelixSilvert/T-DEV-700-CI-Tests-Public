@@ -9,9 +9,14 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle("Trinity")
-    .setDescription("api documentation")
-    .setVersion("1.0")
+    .setDescription("API documentation fot Trinity, need JWT token in 'Authorize' (you can login with /auth/login)")
+    .setVersion("2.0")
     .addTag("trinity")
+    .addServer("/api")
+    .addBearerAuth(
+      { type: "http", scheme: "bearer", bearerFormat: "JWT" },
+      "JWT"
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup("api", app, document);

@@ -1,6 +1,6 @@
 import { Exclude } from "class-transformer";
-import { Team } from "src/modules/teams/entities/team.entity";
-import { Clock } from "src/modules/clocks/entities/clock.entity";
+import { Team } from "../../teams/entities/team.entity";
+import { Clock } from "../../clocks/entities/clock.entity";
 import {
   Column,
   Entity,
@@ -45,7 +45,7 @@ export class User {
   role: UserRole;
 
   @Column({ name: "IDTeam", type: "uuid", nullable: true })
-  IDTeam: string;
+  IDTeam: string | null;
 
   @ManyToOne(() => Team, (team) => team.members)
   @JoinColumn({ name: "IDTeam" })
