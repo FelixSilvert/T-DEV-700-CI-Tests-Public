@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { UserRole } from "../entities/user.entity";
 import {
   IsNotEmpty,
   IsOptional,
@@ -40,5 +41,9 @@ export class CreateUserDto {
   })
   @IsUUID()
   @IsOptional()
-  IDTeam: string;
+  IDTeam?: string | null;
+  
+  @ApiProperty({ example: "admin", required: false, enum: UserRole })
+  @IsOptional()
+  role?: UserRole;
 }
