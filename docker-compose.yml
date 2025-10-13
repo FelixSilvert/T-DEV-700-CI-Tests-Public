@@ -36,8 +36,6 @@ services:
     restart: unless-stopped
     ports:
       - "${NGINX_EXTERNAL_PORT:-80}:${NGINX_INTERNAL_PORT:-80}"
-    env_file:
-      - .env
     environment:
       # Default values (fallback if .env missing or incomplete)
       - NGINX_INTERNAL_PORT=${NGINX_INTERNAL_PORT:-80}
