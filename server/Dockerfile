@@ -13,9 +13,6 @@ RUN npm ci
 # Copy the rest of the application files
 COPY . .
 
-# Build the NestJS application
-RUN npm run build
-
 # Expose the application port
 EXPOSE 3000
 

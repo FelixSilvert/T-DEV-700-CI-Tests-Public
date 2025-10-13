@@ -78,6 +78,9 @@ services:
       - .env
     environment:
       DB_PORT: ${DB_INTERNAL_PORT}
+    volumes:
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
