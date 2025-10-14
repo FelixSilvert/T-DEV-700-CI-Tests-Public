@@ -1,2 +1,4 @@
 # Environment
-.env
+.env*
+!.env.example
+!.env*.example

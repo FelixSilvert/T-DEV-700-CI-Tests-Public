@@ -35,7 +35,7 @@ async function bootstrap() {
 
   app.enableCors();
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3001); // Défaut à 3001 pour éviter conflit avec Next.js
 }
 
 bootstrap();
