@@ -1,26 +1,46 @@
+# Git
 .git
 .gitignore
 .gitattributes
 
+# Dependencies
 **/node_modules
 
+# Build outputs
 **/dist
+**/.next
+**/out
+**/build
 **/coverage
 
+# Cache
+**/.cache
+**/.turbo
+**/.vercel
+
+# Environnements (racine + sous-dossiers)
 .env
 .env.*
-!.env.example
+!.env*.example
+**/.env*
+!**/.env*.example
 
-**/*.log
-*.md
-
+# IDE
 .DS_Store
 .idea
 .vscode
 *.swp
 *.swo
 
-*.local
-*.tmp
+# Documentation
+*.md
+README.md
 
+# Docker
 **/docker-compose*.yml
+**/Dockerfile*
+
+# Logs & Temp
+**/*.log*
+*.tmp
+*.local
