@@ -7,6 +7,7 @@ import { UsersModule } from "./modules/users/users.module";
 import { TeamsModule } from "./modules/teams/teams.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { ClocksModule } from "./modules/clocks/clocks.module";
+import { ReportsModule } from "./modules/reports/reports.module";
 import { join } from "path";
 
 @Module({
@@ -20,6 +21,7 @@ import { join } from "path";
     TeamsModule,
     AuthModule,
     ClocksModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
