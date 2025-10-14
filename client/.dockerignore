@@ -1,6 +1,9 @@
 # Node.js
 node_modules
+.next
+out
 dist
+build
 
 # Environnements
 .env*
@@ -17,10 +20,16 @@ dist
 *.md
 
 # Tests
-#*.test.ts
-#*.spec.ts
+#*.test.*
+#*.spec.*
 #jest.config.*
 #coverage
+#__tests__/
+
+# Cache & Build artifacts
+.turbo
+.cache
+.vercel
 
 # Docker
 docker-compose*.yml
