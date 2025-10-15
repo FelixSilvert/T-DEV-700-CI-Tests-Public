@@ -81,7 +81,7 @@ services:
       DB_PORT: ${DB_INTERNAL_PORT}
     volumes:
       - ./server:/usr/src/app
-      - /usr/src/app/node_modules
+      - trinity_back_node_modules:/usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
@@ -116,7 +116,8 @@ services:
       BACKEND_URL: http://${BACKEND_HOST}:${BACKEND_INTERNAL_PORT}
     volumes:
       - ./client:/usr/src/app
-      - /usr/src/app/node_modules
+      - trinity_front_node_modules:/usr/src/app/node_modules
+      - trinity_front_next_cache:/usr/src/app/.next
     depends_on:
       back:
         condition: service_healthy
@@ -137,6 +138,13 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  trinity_back_node_modules:
+    driver: local
+  trinity_front_node_modules:
+    driver: local
+  trinity_front_next_cache:
+    driver: local
 
 networks:
   trinity-network:
