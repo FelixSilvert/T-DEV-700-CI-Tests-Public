@@ -4,6 +4,12 @@ import { Clock, ClockType } from "../../clocks/entities/clock.entity";
 import { User } from "../../users/entities/user.entity";
 import { KpiResult } from "../interface/reports.interface";
 
+interface ExpectedSchedule {
+  expectedArrivalMinutes: number;
+  expectedDepartureMinutes: number;
+  expectedLunchMinutes: number;
+}
+
 @Injectable()
 export class KpiCalculatorService {
   private readonly logger = new Logger(KpiCalculatorService.name);
@@ -39,7 +45,7 @@ export class KpiCalculatorService {
   }
 
   /**
-   * 2. Heures de retard (arrivée après heure prévue)
+   * 2. Heures de retard (écarts cumulés par rapport aux horaires attendus)
    */
   calculateLateHours(users: User[], from: Date, to: Date): KpiResult {
     let totalLateMinutes = 0;
@@ -47,12 +53,12 @@ export class KpiCalculatorService {
 
     for (const user of users) {
       const clocks = this.filterClocksByDate(user.clocks, from, to);
-      const arrivals = clocks.filter(c => c.type === ClockType.ARRIVAL);
+      const clocksByDay = this.groupClocksByDay(clocks);
+      const expectedSchedule = this.getExpectedSchedule(user);
 
       let userLateMinutes = 0;
-      for (const arrival of arrivals) {
-        const lateMinutes = this.calculateLateMinutes(arrival, user);
-        userLateMinutes += lateMinutes;
+      for (const [, dayClocks] of Object.entries(clocksByDay)) {
+        userLateMinutes += this.calculateDayLateMinutes(dayClocks, expectedSchedule);
       }
 
       if (userLateMinutes > 0) {
@@ -80,7 +86,7 @@ export class KpiCalculatorService {
 
     return {
       value: Math.round(average * 100) / 100,
-      unit: "hours/day",
+      unit: "hours",
       details: {
         totalHours: hoursWorked.value,
         totalDays: workedDays.value,
@@ -176,22 +182,74 @@ export class KpiCalculatorService {
   /**
    * Calcule les minutes de retard
    */
-  private calculateLateMinutes(arrival: Clock, user: User): number {
-    const arrivalHour = arrival.timestamp.getHours();
-    const arrivalMinute = arrival.timestamp.getMinutes();
-
-    // Utiliser l'heure prévue de l'utilisateur ou 9h par défaut
-    let expectedHour = 9;
-    let expectedMinute = 0;
-
-    if (user.expectedArrivalTime) {
-      [expectedHour, expectedMinute] = user.expectedArrivalTime.split(":").map(Number);
+  // Mesure le retard quotidien en se basant sur l'arrivée, le départ et la pause déjeuner attendus
+  private calculateDayLateMinutes(dayClocks: Clock[], schedule: ExpectedSchedule): number {
+    const arrivalClock = dayClocks.find(clock => clock.type === ClockType.ARRIVAL);
+    if (!arrivalClock) {
+      return 0;
     }
 
-    const arrivalInMinutes = arrivalHour * 60 + arrivalMinute;
-    const expectedInMinutes = expectedHour * 60 + expectedMinute;
+    let lateMinutes = Math.max(
+      0,
+      this.getMinutesFromTimestamp(arrivalClock.timestamp) - schedule.expectedArrivalMinutes,
+    );
 
-    return Math.max(0, arrivalInMinutes - expectedInMinutes);
+    const departureClock = dayClocks.find(clock => clock.type === ClockType.DEPARTURE);
+    if (departureClock) {
+      lateMinutes += Math.max(
+        0,
+        schedule.expectedDepartureMinutes - this.getMinutesFromTimestamp(departureClock.timestamp),
+      );
+    }
+
+    const lunchDuration = this.getLunchDuration(dayClocks);
+    if (lunchDuration !== null && lunchDuration > schedule.expectedLunchMinutes) {
+      lateMinutes += lunchDuration - schedule.expectedLunchMinutes;
+    }
+
+    return lateMinutes;
+  }
+
+  private getExpectedSchedule(user: User): ExpectedSchedule {
+    const expectedArrivalMinutes = this.timeStringToMinutes(user.expectedArrivalTime, 9 * 60);
+    const expectedDepartureMinutes = this.timeStringToMinutes(user.expectedDepartureTime, 17 * 60);
+    const expectedLunchMinutes = user.lunchBreakDuration ?? 60;
+
+    return {
+      expectedArrivalMinutes,
+      expectedDepartureMinutes: Math.max(expectedArrivalMinutes, expectedDepartureMinutes),
+      expectedLunchMinutes,
+    };
+  }
+
+  private timeStringToMinutes(value?: string | null, fallbackMinutes = 0): number {
+    if (!value) {
+      return fallbackMinutes;
+    }
+
+    const parts = value.split(":").map(Number).filter(part => !Number.isNaN(part));
+    if (parts.length < 2) {
+      return fallbackMinutes;
+    }
+
+    return parts[0] * 60 + parts[1];
+  }
+
+  private getMinutesFromTimestamp(date: Date): number {
+    const ts = new Date(date);
+    return ts.getUTCHours() * 60 + ts.getUTCMinutes();
+  }
+
+  private getLunchDuration(dayClocks: Clock[]): number | null {
+    const lunchStart = dayClocks.find(clock => clock.type === ClockType.LUNCH_START);
+    const lunchEnd = dayClocks.find(clock => clock.type === ClockType.LUNCH_END);
+
+    if (!lunchStart || !lunchEnd) {
+      return null;
+    }
+
+    const duration = (lunchEnd.timestamp.getTime() - lunchStart.timestamp.getTime()) / 60000;
+    return Math.max(0, duration);
   }
 
   /**

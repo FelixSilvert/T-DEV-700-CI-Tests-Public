@@ -63,7 +63,7 @@ export class ReportsService {
     return [
       { kpi: AvailableKpi.HOURS_WORKED, description: "Total hours worked", unit: "hours" },
       { kpi: AvailableKpi.LATE_HOURS, description: "Total late hours", unit: "hours" },
-      { kpi: AvailableKpi.AVERAGE_HOURS_PER_DAY, description: "Average hours per day worked", unit: "hours/day" },
+      { kpi: AvailableKpi.AVERAGE_HOURS_PER_DAY, description: "Average hours per day worked", unit: "hours" },
       { kpi: AvailableKpi.WORKED_DAYS, description: "Number of days worked", unit: "days" },
       { kpi: AvailableKpi.ABSENCES, description: "Number of absent days", unit: "days" },
     ];
