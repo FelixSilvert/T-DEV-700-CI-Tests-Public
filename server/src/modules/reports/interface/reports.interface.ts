@@ -1,19 +1,17 @@
-import { KpiResult } from "../services/kpi-calculator.service";
 import { ReportScope } from "../dto/generate-report.dto";
 
-/**
- * Interface de réponse pour un rapport généré
- */
+export interface KpiResult {
+  value: number;
+  unit: string;
+  details?: Record<string, any>;
+}
+
 export interface ReportResponse {
   scope: ReportScope;
   from: string;
   to: string;
   targetId: string | null;
-  targetName?: string;
-  periodInfo: {
-    totalDays: number;
-    workingDays: number;
-  };
+  targetName: string;
   kpis: Record<string, KpiResult>;
   generatedAt: string;
 }
