@@ -151,45 +151,6 @@ export class ClocksService {
     }
   }
 
-  /**
-   * Récupère tous les clocks d'un utilisateur
-   */
-  async findByUser(userId: string): Promise<Clock[]> {
-    try {
-      const userExists = await this.userRepository.exists({ where: { id: userId } });
-      if (!userExists) {
-        throw new NotFoundException(`User with ID ${userId} not found`);
-      }
-
-      const clocks = await this.clockRepository.find({
-        where: { IDUser: userId },
-        order: { timestamp: "DESC" },
-      });
-
-      if (!clocks || clocks.length === 0) {
-        throw new NotFoundException(`No clocks found for user ${userId}`);
-      }
-
-      return clocks;
-    } catch (error) {
-      this.logger.error("Error fetching user clocks:", error);
-      if (error instanceof HttpException) throw error;
-      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  /**
-   * Récupère les clocks du jour pour un utilisateur
-   */
-  async findTodayClocks(userId: string): Promise<Clock[]> {
-    try {
-      return await this.findClocksForDay(userId, new Date());
-    } catch (error) {
-      this.logger.error("Error fetching today's clocks:", error);
-      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
   private async findClocksForDay(userId: string, referenceDate: Date): Promise<Clock[]> {
     const { startOfDay, endOfDay } = this.getDayBoundaries(referenceDate);
 
@@ -400,64 +361,5 @@ export class ClocksService {
       [ClockType.DEPARTURE]: 4,
     };
     return order[type];
-  }
-
-  /**
-   * Calcule les heures travaillées pour un utilisateur sur une période
-   */
-  async calculateWorkedHours(userId: string, from: Date, to: Date): Promise<number> {
-    try {
-      const clocks = await this.clockRepository.find({
-        where: {
-          IDUser: userId,
-          timestamp: Between(from, to),
-        },
-        order: { timestamp: "ASC" },
-      });
-
-      // Grouper par jour
-      const clocksByDay = this.groupClocksByDay(clocks);
-
-      let totalMinutes = 0;
-
-      for (const [, dayClocks] of Object.entries(clocksByDay)) {
-        const arrival = dayClocks.find(c => c.type === ClockType.ARRIVAL);
-        const lunchStart = dayClocks.find(c => c.type === ClockType.LUNCH_START);
-        const lunchEnd = dayClocks.find(c => c.type === ClockType.LUNCH_END);
-        const departure = dayClocks.find(c => c.type === ClockType.DEPARTURE);
-
-        if (!arrival || !departure) continue;
-
-        // Temps total entre arrivée et départ
-        let dayMinutes = (departure.timestamp.getTime() - arrival.timestamp.getTime()) / 1000 / 60;
-
-        // Soustraire la pause déjeuner si complète
-        if (lunchStart && lunchEnd) {
-          const lunchMinutes = (lunchEnd.timestamp.getTime() - lunchStart.timestamp.getTime()) / 1000 / 60;
-          dayMinutes -= lunchMinutes;
-        }
-
-        totalMinutes += dayMinutes;
-      }
-
-      return Math.round(totalMinutes / 60 * 100) / 100; // Heures avec 2 décimales
-    } catch (error) {
-      this.logger.error("Error calculating worked hours:", error);
-      throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  /**
-   * Groupe les clocks par jour
-   */
-  private groupClocksByDay(clocks: Clock[]): Record<string, Clock[]> {
-    return clocks.reduce((acc, clock) => {
-      const dateKey = clock.timestamp.toISOString().split("T")[0];
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(clock);
-      return acc;
-    }, {} as Record<string, Clock[]>);
   }
 }
