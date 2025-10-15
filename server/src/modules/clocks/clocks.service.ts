@@ -362,18 +362,4 @@ export class ClocksService {
     };
     return order[type];
   }
-
-  /**
-   * Groupe les clocks par jour
-   */
-  private groupClocksByDay(clocks: Clock[]): Record<string, Clock[]> {
-    return clocks.reduce((acc, clock) => {
-      const dateKey = clock.timestamp.toISOString().split("T")[0];
-      if (!acc[dateKey]) {
-        acc[dateKey] = [];
-      }
-      acc[dateKey].push(clock);
-      return acc;
-    }, {} as Record<string, Clock[]>);
-  }
 }
