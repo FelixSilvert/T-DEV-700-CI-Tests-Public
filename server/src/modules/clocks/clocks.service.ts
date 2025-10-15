@@ -43,7 +43,7 @@ export class ClocksService {
       // Utiliser l'heure actuelle si non fournie
       const clockTimestamp = timestamp ? new Date(timestamp) : new Date();
 
-      // Valider la cohérence du pointage
+      // Valider la cohérence du pointage sur la journée du timestamp fourni
       await this.validateClockConsistency(IDUser, type, clockTimestamp);
 
       const newClock = this.clockRepository.create({
@@ -183,24 +183,33 @@ export class ClocksService {
    */
   async findTodayClocks(userId: string): Promise<Clock[]> {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const clocks = await this.clockRepository.find({
-        where: {
-          IDUser: userId,
-          timestamp: Between(today, tomorrow),
-        },
-        order: { timestamp: "ASC" },
-      });
-
-      return clocks;
+      return await this.findClocksForDay(userId, new Date());
     } catch (error) {
       this.logger.error("Error fetching today's clocks:", error);
       throw new HttpException("An unexpected error occurred", HttpStatus.INTERNAL_SERVER_ERROR);
     }
+  }
+
+  private async findClocksForDay(userId: string, referenceDate: Date): Promise<Clock[]> {
+    const { startOfDay, endOfDay } = this.getDayBoundaries(referenceDate);
+
+    return this.clockRepository.find({
+      where: {
+        IDUser: userId,
+        timestamp: Between(startOfDay, endOfDay),
+      },
+      order: { timestamp: "ASC" },
+    });
+  }
+
+  private getDayBoundaries(referenceDate: Date): { startOfDay: Date; endOfDay: Date } {
+    const startOfDay = new Date(referenceDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(startOfDay);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
+    return { startOfDay, endOfDay };
   }
 
   /**
@@ -256,25 +265,25 @@ export class ClocksService {
    * Vérifie les règles métier selon le type de clock
    */
   private async validateClockConsistency(userId: string, type: ClockType, timestamp: Date): Promise<void> {
-    const todayClocks = await this.findTodayClocks(userId);
+    const dayClocks = await this.findClocksForDay(userId, timestamp);
 
-    // Vérifier l'unicité du type pour aujourd'hui
-    this.checkDuplicateClockType(todayClocks, type);
+    // Vérifier l'unicité du type pour cette journée
+    this.checkDuplicateClockType(dayClocks, type);
 
     // Valider selon le type de clock
-    this.validateClockTypeRules(todayClocks, type);
+    this.validateClockTypeRules(dayClocks, type);
 
     // Valider l'ordre chronologique des timestamps
-    this.validateClockTimestamps(todayClocks, type, timestamp);
+    this.validateClockTimestamps(dayClocks, type, timestamp);
   }
 
   /**
-   * Vérifie qu'il n'existe pas déjà un clock du même type aujourd'hui
+   * Vérifie qu'il n'existe pas déjà un clock du même type sur la journée
    */
   private checkDuplicateClockType(todayClocks: Clock[], type: ClockType): void {
     const existingSameType = todayClocks.find(c => c.type === type);
     if (existingSameType) {
-      throw new ConflictException(`A ${type} clock already exists for today`);
+      throw new ConflictException(`A ${type} clock already exists for this day`);
     }
   }
 
