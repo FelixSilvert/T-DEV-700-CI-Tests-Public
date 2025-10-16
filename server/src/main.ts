@@ -13,8 +13,10 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
 
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup("api", app, document);
+  if (process.env.NODE_ENV !== "production") {
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup("docs", app, document);
+  }
 
   app.use(bodyParser.json({ limit: "10mb" }));
   app.setGlobalPrefix("api");
