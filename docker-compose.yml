@@ -46,6 +46,8 @@ services:
       - FRONTEND_HOST=${FRONTEND_HOST:-trinity-front}
       - FRONTEND_INTERNAL_PORT=${FRONTEND_INTERNAL_PORT:-3000}
       - NODE_ENV=${NODE_ENV:-development}
+    volumes:
+      - ./nginx/logs:/var/log/nginx
     depends_on:
       back:
         condition: service_healthy
@@ -81,10 +83,11 @@ services:
       DB_PORT: ${DB_INTERNAL_PORT}
     volumes:
       - ./server:/usr/src/app
-      - trinity_back_node_modules:/usr/src/app/node_modules
+      - back_node_modules:/usr/src/app/node_modules
     depends_on:
       db:
         condition: service_healthy
+    tty: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${BACKEND_INTERNAL_PORT:-3001}/api"] # todo: make a real endpoint /health
       interval: 30s
@@ -116,11 +119,12 @@ services:
       BACKEND_URL: http://${BACKEND_HOST}:${BACKEND_INTERNAL_PORT}
     volumes:
       - ./client:/usr/src/app
-      - trinity_front_node_modules:/usr/src/app/node_modules
-      - trinity_front_next_cache:/usr/src/app/.next
+      - front_node_modules:/usr/src/app/node_modules
+      - front_next_cache:/usr/src/app/.next
     depends_on:
       back:
         condition: service_healthy
+    tty: true
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${FRONTEND_INTERNAL_PORT:-3000}"]
       interval: 10s
@@ -137,13 +141,22 @@ services:
       - trinity-network
 
 volumes:
+  # Database
   postgres_data:
+    name: trinity_postgres_data
     driver: local
-  trinity_back_node_modules:
+
+  # Backend
+  back_node_modules:
+    name: trinity_back_node_modules
     driver: local
-  trinity_front_node_modules:
+
+  # Frontend
+  front_node_modules:
+    name: trinity_front_node_modules
     driver: local
-  trinity_front_next_cache:
+  front_next_cache:
+    name: trinity_front_next_cache
     driver: local
 
 networks:
