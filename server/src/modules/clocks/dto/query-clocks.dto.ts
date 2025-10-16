@@ -1,8 +1,9 @@
-import { ApiProperty } from "@nestjs/swagger";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsOptional, IsEnum, IsUUID, IsDateString } from "class-validator";
 import { ClockType } from "../entities/clock.entity";
+import { CursorPaginationQueryDto } from "../../../common/pagination/pagination.dto";
 
-export class QueryClocksDto {
+export class QueryClocksDto extends CursorPaginationQueryDto {
   @ApiProperty({
     required: false,
     description: "ID de l'utilisateur",
@@ -48,4 +49,18 @@ export class QueryClocksDto {
   @IsOptional()
   @IsDateString()
   to?: string;
+
+  @ApiPropertyOptional({
+    description: "Nombre de clocks à charger par batch",
+    minimum: 1,
+    maximum: 100,
+    default: 20,
+  })
+  declare limit?: number;
+
+  @ApiPropertyOptional({
+    description: "Cursor de la requête précédente pour charger la suite",
+    example: "MjAyNS0xMC0xNFQxMDozMDowMC4wMDBaOjo2MWJiZTQ3ZC1lZjlmLTRkYjQtYjExYy1hYzQ5YWExNWE2MTg=",
+  })
+  declare cursor?: string;
 }

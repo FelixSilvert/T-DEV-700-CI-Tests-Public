@@ -1,9 +1,12 @@
 import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { Repository, ILike } from "typeorm";
 import { CreateTeamDto } from "./dto/create-team.dto";
 import { UpdateTeamDto } from "./dto/update-team.dto";
 import { Team } from "./entities/team.entity";
+import { SearchPaginationQueryDto } from "../../common/pagination/pagination.dto";
+import { OffsetPaginatedResponse } from "../../common/pagination/pagination.types";
+import { buildOffsetPaginatedResponse, getOffsetPaginationParams } from "../../common/pagination/pagination.utils";
 
 @Injectable()
 export class TeamsService {
@@ -26,13 +29,28 @@ export class TeamsService {
     }
   }
 
-  async findAll(): Promise<Team[]> {
+  async findAll(paginationQuery: SearchPaginationQueryDto): Promise<OffsetPaginatedResponse<Team>> {
     try {
-      const teams = await this.TeamRepository.find();
-      if (!teams || teams.length === 0) {
-        throw new HttpException("No teams found", HttpStatus.NOT_FOUND);
-      }
-      return teams;
+      const pagination = getOffsetPaginationParams(paginationQuery);
+      const searchTerm = paginationQuery.search?.trim();
+      const like = searchTerm ? `%${searchTerm}%` : undefined;
+
+      const where = like
+        ? [
+            { name: ILike(like) },
+            { description: ILike(like) },
+            { managerId: ILike(like) },
+          ]
+        : undefined;
+
+      const [teams, total] = await this.TeamRepository.findAndCount({
+        where,
+        order: { name: "ASC" },
+        skip: pagination.offset,
+        take: pagination.limit,
+      });
+
+      return buildOffsetPaginatedResponse(teams, total, pagination);
     } catch (error) {
       this.logger.error("Error fetching teams:", error);
       if (error instanceof HttpException) throw error;

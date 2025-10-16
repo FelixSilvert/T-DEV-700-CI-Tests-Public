@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
   UseInterceptors,
   ClassSerializerInterceptor,
@@ -33,6 +34,11 @@ import { Clock } from "../clocks/entities/clock.entity";
 import { CreateUserResult, UpdateUserResult, MessageResult } from "./types/user.types";
 import { GetUser } from "./decorators/get-user.decorator";
 import { UsersService } from "./users.service";
+import {
+  CursorPaginationQueryDto,
+  SearchPaginationQueryDto,
+} from "../../common/pagination/pagination.dto";
+import { CursorPaginatedResponse, OffsetPaginatedResponse } from "../../common/pagination/pagination.types";
 
 @ApiTags("Users")
 @ApiBearerAuth("JWT")
@@ -95,13 +101,42 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "List of users",
-    type: [User],
+    description: "Paginated list of users",
+    schema: {
+      example: {
+        data: [
+          {
+            id: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@email.com",
+            phoneNumber: "+33600000000",
+            role: "user",
+            IDTeam: null,
+            expectedArrivalTime: "09:00",
+            expectedDepartureTime: "17:00",
+            lunchBreakDuration: 60,
+            createdAt: "2025-10-14T13:48:39.000Z",
+            updatedAt: "2025-10-14T13:48:39.000Z",
+          },
+        ],
+        meta: {
+          totalItems: 42,
+          totalPages: 5,
+          perPage: 10,
+          currentPage: 1,
+          hasPreviousPage: false,
+          hasNextPage: true,
+          hasMore: true,
+        },
+      },
+    },
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "No users found" })
-  async findAll(): Promise<User[]> {
-    return this.usersService.findAll();
+  async findAll(
+    @Query() paginationQuery: SearchPaginationQueryDto,
+  ): Promise<OffsetPaginatedResponse<User>> {
+    return this.usersService.findAll(paginationQuery);
   }
 
   @Get(":id")
@@ -141,13 +176,43 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "List of team members",
-    type: [User],
+    description: "Paginated list of team members",
+    schema: {
+      example: {
+        data: [
+          {
+            id: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@email.com",
+            phoneNumber: "+33600000000",
+            role: "user",
+            IDTeam: "f9128a9a-8b0c-4b1d-8f44-8c7b9a7f1b22",
+            expectedArrivalTime: "09:00",
+            expectedDepartureTime: "17:00",
+            lunchBreakDuration: 60,
+            createdAt: "2025-10-14T13:48:39.000Z",
+            updatedAt: "2025-10-14T13:48:39.000Z",
+          },
+        ],
+        meta: {
+          totalItems: 5,
+          totalPages: 1,
+          perPage: 10,
+          currentPage: 1,
+          hasPreviousPage: false,
+          hasNextPage: false,
+          hasMore: false,
+        },
+      },
+    },
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "No users found" })
-  async findAllByTeamId(@Param("teamId") teamId: string): Promise<User[]> {
-    return this.usersService.findAllByTeamId(teamId);
+  async findAllByTeamId(
+    @Param("teamId") teamId: string,
+    @Query() paginationQuery: SearchPaginationQueryDto,
+  ): Promise<OffsetPaginatedResponse<User>> {
+    return this.usersService.findAllByTeamId(teamId, paginationQuery);
   }
 
   @Put(":id")
@@ -329,12 +394,32 @@ export class UsersController {
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: "List of user's clocks",
-    type: [Clock],
+    description: "Load-more pagination of user's clocks",
+    schema: {
+      example: {
+        data: [
+          {
+            id: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            type: "arrival",
+            timestamp: "2025-10-14T08:30:00.000Z",
+            IDUser: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
+            createdAt: "2025-10-14T08:30:01.000Z",
+            updatedAt: "2025-10-14T08:30:01.000Z",
+          },
+        ],
+        meta: {
+          totalItems: 24,
+          perPage: 20,
+          hasMore: false,
+        },
+      },
+    },
   })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: "Unauthorized" })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: "No clocks found" })
-  async findUserClocks(@Param("id") id: string): Promise<Clock[]> {
-    return this.usersService.findUserClocks(id);
+  async findUserClocks(
+    @Param("id") id: string,
+    @Query() paginationQuery: CursorPaginationQueryDto,
+  ): Promise<CursorPaginatedResponse<Clock>> {
+    return this.usersService.findUserClocks(id, paginationQuery);
   }
 }

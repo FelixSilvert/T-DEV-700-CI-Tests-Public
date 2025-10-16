@@ -7,7 +7,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "nest build",
-    "seed": "ts-node src/modules/database/admin.seeder.ts",
+  "seed": "ts-node src/modules/database/main.seeder.ts",
+  "seed:admin": "ts-node src/modules/database/admin.seeder.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "dev": "concurrently -k --success=first -n NEST,NGROK \"npm run start:dev\" \"make db && make wait-db && make wait-nest && make ngrok\"",

@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import {
@@ -19,6 +20,9 @@ import { UpdateTeamDto } from "./dto/update-team.dto";
 import { TeamsService } from "./teams.service";
 import { RolesGuard } from "../../guards/roles.guard";
 import { JwtAuthGuard } from "../../guards/jwt-auth.guard";
+import { SearchPaginationQueryDto } from "../../common/pagination/pagination.dto";
+import { OffsetPaginatedResponse } from "../../common/pagination/pagination.types";
+import { Team } from "./entities/team.entity";
 
 @ApiTags("Teams")
 @ApiBearerAuth("JWT")
@@ -45,9 +49,35 @@ export class TeamsController {
     summary: "Get all teams",
     description: "Public route: no authentication required.",
   })
-  @ApiResponse({ status: 200, description: "List of teams" })
-  findAll() {
-    return this.teamsService.findAll();
+  @ApiResponse({
+    status: 200,
+    description: "Paginated list of teams",
+    schema: {
+      example: {
+        data: [
+          {
+            id: "f9128a9a-8b0c-4b1d-8f44-8c7b9a7f1b22",
+            name: "Team Alpha",
+            description: "Product squad",
+            managerId: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
+          },
+        ],
+        meta: {
+          totalItems: 12,
+          totalPages: 2,
+          perPage: 10,
+          currentPage: 1,
+          hasPreviousPage: false,
+          hasNextPage: true,
+          hasMore: true,
+        },
+      },
+    },
+  })
+  findAll(
+    @Query() paginationQuery: SearchPaginationQueryDto,
+  ): Promise<OffsetPaginatedResponse<Team>> {
+    return this.teamsService.findAll(paginationQuery);
   }
 
   @Get(":id")

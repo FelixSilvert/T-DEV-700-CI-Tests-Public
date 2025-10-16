@@ -5,12 +5,14 @@ import { Repository } from "typeorm";
 import { AppModule } from "../../app.module";
 import { UsersService } from "../users/users.service";
 import { User } from "../users/entities/user.entity";
-import { AdminSeedService } from "./services/admin-seed.service";
+import { Team } from "../teams/entities/team.entity";
+import { Clock } from "../clocks/entities/clock.entity";
+import { DatabaseSeeder } from "./seeders/database.seeder";
 
 async function bootstrap() {
-  const logger = new Logger("AdminSeeder");
+  const logger = new Logger("DatabaseSeeder");
   logger.log("=".repeat(60));
-  logger.log("Ensuring admin account only");
+  logger.log("Launching database seeder");
   logger.log("=".repeat(60));
 
   let app: INestApplicationContext | undefined;
@@ -22,17 +24,25 @@ async function bootstrap() {
 
     const usersService = app.get(UsersService);
     const userRepository = app.get<Repository<User>>(getRepositoryToken(User));
-    const adminSeeder = new AdminSeedService(usersService, userRepository, logger);
+    const teamRepository = app.get<Repository<Team>>(getRepositoryToken(Team));
+    const clockRepository = app.get<Repository<Clock>>(getRepositoryToken(Clock));
 
-    const admin = await adminSeeder.ensureAdmin();
-    logger.log(`Admin ready: ${admin.email}`);
+    const seeder = new DatabaseSeeder(
+      usersService,
+      userRepository,
+      teamRepository,
+      clockRepository,
+      logger,
+    );
+
+    await seeder.run();
 
     logger.log("=".repeat(60));
-    logger.log("Admin seed completed successfully");
+    logger.log("Database seeding completed successfully");
     logger.log("=".repeat(60));
   } catch (error) {
     logger.error("=".repeat(60));
-    logger.error("Admin seeding failed");
+    logger.error("Database seeding failed");
     logger.error("=".repeat(60));
     logger.error(error);
     process.exit(1);
@@ -45,6 +55,6 @@ async function bootstrap() {
 }
 
 bootstrap().catch((error) => {
-  console.error("Fatal error during admin bootstrap:", error);
+  console.error("Fatal error during bootstrap:", error);
   process.exit(1);
 });

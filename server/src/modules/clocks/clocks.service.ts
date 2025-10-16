@@ -8,12 +8,19 @@ import {
   ConflictException,
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, Between, FindOptionsWhere } from "typeorm";
+import { Repository, Between } from "typeorm";
 import { Clock, ClockType } from "./entities/clock.entity";
 import { CreateClockDto } from "./dto/create-clock.dto";
 import { UpdateClockDto } from "./dto/update-clock.dto";
 import { QueryClocksDto } from "./dto/query-clocks.dto";
 import { User } from "../users/entities/user.entity";
+import { CursorPaginatedResponse } from "../../common/pagination/pagination.types";
+import {
+  buildCursorPaginatedResponse,
+  decodeCursor,
+  encodeCursor,
+  getCursorLimit,
+} from "../../common/pagination/pagination.utils";
 
 @Injectable()
 export class ClocksService {
@@ -70,58 +77,63 @@ export class ClocksService {
   /**
    * Récupère les clocks avec filtres optionnels
    */
-  async findAll(queryDto: QueryClocksDto): Promise<Clock[]> {
+  async findAll(queryDto: QueryClocksDto): Promise<CursorPaginatedResponse<Clock>> {
     try {
-      const { userId, teamId, type, from, to } = queryDto;
+      const { userId, teamId, type, from, to, cursor } = queryDto;
+      const limit = getCursorLimit(queryDto);
 
-      const whereConditions: FindOptionsWhere<Clock> = {};
-
-      // Filtrer par utilisateur
-      if (userId) {
-        whereConditions.IDUser = userId;
-      }
-
-      // Filtrer par type de clock
-      if (type) {
-        whereConditions.type = type;
-      }
-
-      // Filtrer par plage de dates
-      if (from && to) {
-        whereConditions.timestamp = Between(new Date(from), new Date(to));
-      } else if (from) {
-        whereConditions.timestamp = Between(new Date(from), new Date());
-      }
-
-      let query = this.clockRepository
+      const baseQuery = this.clockRepository
         .createQueryBuilder("clock")
-        .leftJoinAndSelect("clock.user", "user");
+        .leftJoinAndSelect("clock.user", "user")
+        .where("1 = 1")
+        .orderBy("clock.timestamp", "DESC")
+        .addOrderBy("clock.id", "DESC");
 
-      // Filtrer par équipe si nécessaire
       if (teamId) {
-        query = query.where("user.teamId = :teamId", { teamId });
+        baseQuery.andWhere("user.\"IDTeam\" = :teamId", { teamId });
       }
 
-      // Appliquer les autres conditions
       if (userId) {
-        query = query.andWhere("clock.IDUser = :userId", { userId });
+        baseQuery.andWhere("clock.\"IDUser\" = :userId", { userId });
       }
+
       if (type) {
-        query = query.andWhere("clock.type = :type", { type });
+        baseQuery.andWhere("clock.type = :type", { type });
       }
+
       if (from && to) {
-        query = query.andWhere("clock.timestamp BETWEEN :from AND :to", { from, to });
+        baseQuery.andWhere("clock.timestamp BETWEEN :from AND :to", { from, to });
       } else if (from) {
-        query = query.andWhere("clock.timestamp >= :from", { from });
+        baseQuery.andWhere("clock.timestamp >= :from", { from });
       }
 
-      const clocks = await query.orderBy("clock.timestamp", "DESC").getMany();
-
-      if (!clocks || clocks.length === 0) {
-        throw new NotFoundException("No clocks found matching the criteria");
+      if (cursor) {
+        const { timestamp, id } = decodeCursor(cursor);
+        baseQuery.andWhere(
+          "(clock.timestamp < :cursorTimestamp OR (clock.timestamp = :cursorTimestamp AND clock.id < :cursorId))",
+          { cursorTimestamp: timestamp.toISOString(), cursorId: id },
+        );
       }
 
-      return clocks;
+      const paginatedQuery = baseQuery.clone().take(limit + 1);
+  const totalQuery = baseQuery.clone();
+
+      const [clocks, total] = await Promise.all([
+        paginatedQuery.getMany(),
+        totalQuery.getCount(),
+      ]);
+
+      const hasExtra = clocks.length > limit;
+      const data = hasExtra ? clocks.slice(0, limit) : clocks;
+
+      const nextCursor = hasExtra
+        ? encodeCursor({
+            timestamp: data[data.length - 1].timestamp,
+            id: data[data.length - 1].id,
+          })
+        : null;
+
+      return buildCursorPaginatedResponse(data, total, limit, nextCursor);
     } catch (error) {
       this.logger.error("Error fetching clocks:", error);
       if (error instanceof HttpException) throw error;

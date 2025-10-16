@@ -25,6 +25,7 @@ import { QueryClocksDto } from "./dto/query-clocks.dto";
 import { JwtAuthGuard } from "../../guards/jwt-auth.guard";
 import { RolesGuard } from "../../guards/roles.guard";
 import { Clock } from "./entities/clock.entity";
+import { CursorPaginatedResponse } from "../../common/pagination/pagination.types";
 
 @ApiTags("Clocks")
 @ApiBearerAuth("JWT")
@@ -75,11 +76,35 @@ export class ClocksController {
   })
   @ApiResponse({
     status: 200,
-    description: "List of clocks",
-    type: [Clock],
+    description: "Load-more pagination for clocks",
+    schema: {
+      example: {
+        data: [
+          {
+            id: "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+            type: "arrival",
+            timestamp: "2025-10-14T08:30:00.000Z",
+            IDUser: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
+            createdAt: "2025-10-14T08:30:01.000Z",
+            updatedAt: "2025-10-14T08:30:01.000Z",
+            user: {
+              id: "61bbe47d-ef9f-4db4-b11c-ac49aa15a618",
+              firstName: "John",
+              lastName: "Doe",
+              email: "john.doe@email.com",
+            },
+          },
+        ],
+        meta: {
+          totalItems: 120,
+          perPage: 20,
+          hasMore: true,
+          nextCursor: "MjAyNS0xMC0xNFQwODozMDowMC4wMDBaOjphMWIyYzNkNC1lNWY2LTc4OTAtMTIzNC01Njc4OTBhYmNkZWY=",
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 404, description: "No clocks found" })
-  findAll(@Query() queryDto: QueryClocksDto) {
+  findAll(@Query() queryDto: QueryClocksDto): Promise<CursorPaginatedResponse<Clock>> {
     return this.clocksService.findAll(queryDto);
   }
 
