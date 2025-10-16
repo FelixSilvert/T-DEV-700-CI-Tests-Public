@@ -8,7 +8,7 @@ import {
 } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as bcrypt from "bcrypt";
-import { Repository } from "typeorm";
+import { Repository, ILike } from "typeorm";
 import { Clock } from "../clocks/entities/clock.entity";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdatePasswordDto } from "./dto/update-password.dto";
@@ -18,6 +18,19 @@ import { User, UserRole } from "./entities/user.entity";
 import { UserSecurityService } from "./services/user-security.service";
 import { UserValidationService } from "./services/user-validation.service";
 import { CreateUserResult, UpdateUserResult, MessageResult } from "./types/user.types";
+import {
+  CursorPaginationQueryDto,
+  SearchPaginationQueryDto,
+} from "../../common/pagination/pagination.dto";
+import { CursorPaginatedResponse, OffsetPaginatedResponse } from "../../common/pagination/pagination.types";
+import {
+  buildCursorPaginatedResponse,
+  buildOffsetPaginatedResponse,
+  decodeCursor,
+  encodeCursor,
+  getCursorLimit,
+  getOffsetPaginationParams,
+} from "../../common/pagination/pagination.utils";
 
 interface CreateUserOptions {
   allowPrivilegedRole?: boolean;
@@ -161,17 +174,30 @@ export class UsersService {
   /**
    * Récupère tous les utilisateurs
    */
-  async findAll(): Promise<User[]> {
+  async findAll(paginationQuery: SearchPaginationQueryDto): Promise<OffsetPaginatedResponse<User>> {
     try {
-      const users = await this.userRepository.find({
+      const pagination = getOffsetPaginationParams(paginationQuery);
+      const searchTerm = paginationQuery.search?.trim();
+      const like = searchTerm ? `%${searchTerm}%` : undefined;
+
+      const where = like
+        ? [
+            { firstName: ILike(like) },
+            { lastName: ILike(like) },
+            { email: ILike(like) },
+            { phoneNumber: ILike(like) },
+          ]
+        : undefined;
+
+      const [users, total] = await this.userRepository.findAndCount({
         select: this.userSelectFields,
+        where,
+        order: { createdAt: "DESC" },
+        skip: pagination.offset,
+        take: pagination.limit,
       });
 
-      if (!users || users.length === 0) {
-        throw new NotFoundException("No users found");
-      }
-
-      return users;
+      return buildOffsetPaginatedResponse(users, total, pagination);
     } catch (error) {
       return this.handleError("Error fetching users", error);
     }
@@ -192,18 +218,33 @@ export class UsersService {
   /**
    * Récupère tous les utilisateurs d'une équipe
    */
-  async findAllByTeamId(teamId: string): Promise<User[]> {
+  async findAllByTeamId(
+    teamId: string,
+    paginationQuery: SearchPaginationQueryDto,
+  ): Promise<OffsetPaginatedResponse<User>> {
     try {
-      const users = await this.userRepository.find({
-        where: { IDTeam: teamId },
+      const pagination = getOffsetPaginationParams(paginationQuery);
+      const searchTerm = paginationQuery.search?.trim();
+      const like = searchTerm ? `%${searchTerm}%` : undefined;
+
+      const where = like
+        ? [
+            { IDTeam: teamId, firstName: ILike(like) },
+            { IDTeam: teamId, lastName: ILike(like) },
+            { IDTeam: teamId, email: ILike(like) },
+            { IDTeam: teamId, phoneNumber: ILike(like) },
+          ]
+        : { IDTeam: teamId };
+
+      const [users, total] = await this.userRepository.findAndCount({
+        where,
         select: this.userSelectFields,
+        order: { createdAt: "DESC" },
+        skip: pagination.offset,
+        take: pagination.limit,
       });
 
-      if (!users || users.length === 0) {
-        throw new NotFoundException(`No users found in team ${teamId}`);
-      }
-
-      return users;
+      return buildOffsetPaginatedResponse(users, total, pagination);
     } catch (error) {
       return this.handleError("Error fetching users by team", error);
     }
@@ -229,18 +270,47 @@ export class UsersService {
   /**
    * Récupère tous les clocks d'un utilisateur
    */
-  async findUserClocks(userId: string): Promise<Clock[]> {
+  async findUserClocks(
+    userId: string,
+    paginationQuery: CursorPaginationQueryDto,
+  ): Promise<CursorPaginatedResponse<Clock>> {
     try {
-      const clocks = await this.clockRepository.find({
-        where: { IDUser: userId },
-        order: { timestamp: "DESC" },
-      });
+      const limit = getCursorLimit(paginationQuery);
 
-      if (!clocks || clocks.length === 0) {
-        throw new NotFoundException(`No clocks found for user ${userId}`);
+      const baseQuery = this.clockRepository
+        .createQueryBuilder("clock")
+        .leftJoinAndSelect("clock.user", "user")
+        .where("clock.\"IDUser\" = :userId", { userId })
+        .orderBy("clock.timestamp", "DESC")
+        .addOrderBy("clock.id", "DESC");
+
+      if (paginationQuery.cursor) {
+        const { timestamp, id } = decodeCursor(paginationQuery.cursor);
+        baseQuery.andWhere(
+          "(clock.timestamp < :cursorTimestamp OR (clock.timestamp = :cursorTimestamp AND clock.id < :cursorId))",
+          { cursorTimestamp: timestamp.toISOString(), cursorId: id },
+        );
       }
 
-      return clocks;
+      const paginatedQuery = baseQuery.clone().take(limit + 1);
+      const totalQuery = baseQuery.clone();
+
+      const [clocks, total] = await Promise.all([
+        paginatedQuery.getMany(),
+        totalQuery.getCount(),
+      ]);
+
+      const hasExtra = clocks.length > limit;
+      const data = hasExtra ? clocks.slice(0, limit) : clocks;
+
+      const nextCursor = hasExtra
+        ? encodeCursor({
+            timestamp: data[data.length - 1].timestamp,
+            id: data[data.length - 1].id,
+          })
+        : null;
+
+      return buildCursorPaginatedResponse(data, total, limit, nextCursor);
     } catch (error) {
       return this.handleError("Error fetching clocks", error);
     }
