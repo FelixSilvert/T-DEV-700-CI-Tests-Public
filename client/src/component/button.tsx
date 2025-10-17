@@ -1,24 +1,36 @@
 import React from "react";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary";
-}
+type ButtonProps = {
+  children: React.ReactNode;
+  onClick?: () => void;
+  active?: boolean;
+  colorVariant?: "blue" | "red" | "green" | "gray";
+  className?: string;
+  type?: "button" | "submit";
+};
 
 export default function Button({
   children,
+  onClick,
+  active = false,
+  colorVariant = "blue",
   className = "",
-  variant = "primary",
-  ...props
+  type = "button",
 }: ButtonProps) {
-  const baseStyles =
-    "w-full py-3 rounded-xl font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
-  const variantStyles =
-    variant === "secondary"
-      ? "bg-white text-blue-600 border border-blue-500 hover:bg-blue-50 focus:ring-blue-300"
-      : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-400";
+  const colorClasses = {
+    blue: active ? "bg-blue-600" : "bg-blue-500 hover:bg-blue-700",
+    red: active ? "bg-red-600" : "bg-gray-400 hover:bg-red-700",
+    green: active ? "bg-green-600" : "bg-gray-400 hover:bg-green-700",
+    gray: active ? "bg-gray-500" : "bg-gray-400 hover:bg-gray-500",
+  };
+
 
   return (
-    <button className={`${baseStyles} ${variantStyles} ${className}`} {...props}>
+    <button
+      type={type}
+      onClick={onClick}
+      className={`uppercase px-6 py-2 font-semibold rounded-lg text-white transition-all ${colorClasses[colorVariant]}${className}`}
+    >
       {children}
     </button>
   );

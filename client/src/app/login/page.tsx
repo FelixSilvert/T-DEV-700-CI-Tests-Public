@@ -35,7 +35,7 @@ export default function LoginPage() {
   return (
     
     <div className="relative z-0 flex flex-col items-center justify-center min-h-screen bg-blue-100 overflow-hidden">
-<div className="absolute inset-0 -z-10 pointer-events-none">
+    <div className="absolute inset-0 -z-10 pointer-events-none">
     <div className="absolute top-50 xl:left-80 lg:left-60 md:left-40 sm:left-20 left-10 lg:w-32 lg:h-32 w-16 h-16 bg-blue-600 rounded-xl" />
     <div className="absolute top-0 right-0 w-60 h-32 bg-blue-600" />
     <div className="absolute top-32 right-60 w-28 h-28 bg-blue-600 rounded-tl-xl rounded-bl-xl rounded-br-xl" />
@@ -74,7 +74,7 @@ export default function LoginPage() {
 
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
-        <Button type="submit">Login</Button>
+        <Button type="submit" colorVariant="blue">Login</Button>
 
         <div className="flex justify-end">
           <Link
