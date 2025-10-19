@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { routes } from "@/lib/routes";
 import Link from "next/link";
-import Input from "@/component/input";
-import Button from "@/component/button";
+import Input from "@/components/input";
+import Button from "@/components/button";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,15 +33,14 @@ export default function LoginPage() {
   };
 
   return (
-    
-    <div className="relative z-0 flex flex-col items-center justify-center min-h-screen bg-blue-100 overflow-hidden">
-<div className="absolute inset-0 -z-10 pointer-events-none">
-    <div className="absolute top-50 xl:left-80 lg:left-60 md:left-40 sm:left-20 left-10 lg:w-32 lg:h-32 w-16 h-16 bg-blue-600 rounded-xl" />
-    <div className="absolute top-0 right-0 w-60 h-32 bg-blue-600" />
-    <div className="absolute top-32 right-60 w-28 h-28 bg-blue-600 rounded-tl-xl rounded-bl-xl rounded-br-xl" />
-    <div className="absolute bottom-60 left-0 w-24 h-36 bg-blue-600 rounded-br-xl" />
-    <div className="absolute bottom-96 left-24 w-28 h-28 bg-blue-600 rounded-br-xl rounded-tr-xl rounded-tl-xl" />
-  </div>
+    <div className="relative z-0 flex flex-col items-center justify-center min-h-screen overflow-hidden">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute top-50 xl:left-80 lg:left-60 md:left-40 sm:left-20 left-10 lg:w-32 lg:h-32 w-16 h-16 bg-blue-600 rounded-xl" />
+        <div className="absolute top-0 right-0 w-60 h-32 bg-blue-600" />
+        <div className="absolute top-32 right-60 w-28 h-28 bg-blue-600 rounded-tl-xl rounded-bl-xl rounded-br-xl" />
+        <div className="absolute bottom-60 left-0 w-24 h-36 bg-blue-600 rounded-br-xl" />
+        <div className="absolute bottom-96 left-24 w-28 h-28 bg-blue-600 rounded-br-xl rounded-tr-xl rounded-tl-xl" />
+      </div>
       <h1 className="text-7xl font-bold text-black mb-10 tracking-tight">
         TRINITY<span className="text-blue-600">_</span>
       </h1>

@@ -18,7 +18,10 @@ export default function Button({
       : "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-400";
 
   return (
-    <button className={`${baseStyles} ${variantStyles} ${className}`} {...props}>
+    <button
+      className={`${baseStyles} ${variantStyles} ${className}`}
+      {...props}
+    >
       {children}
     </button>
   );
