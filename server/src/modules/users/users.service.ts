@@ -346,7 +346,7 @@ export class UsersService {
     options: CreateUserOptions = {},
   ): Omit<CreateUserDto, 'password'> {
     const {
-      password, 
+      password: _password, 
       role,
       expectedArrivalTime = "09:00",
       expectedDepartureTime = "17:00",
