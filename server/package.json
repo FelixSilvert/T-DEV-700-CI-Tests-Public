@@ -100,7 +100,7 @@
       "!**/config/**",
       "!**/*.entity.ts"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "coverageThreshold": {
       "global": {
