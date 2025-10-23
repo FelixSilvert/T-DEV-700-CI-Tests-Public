@@ -494,7 +494,7 @@ export class UsersService {
    * Retire le mot de passe d'un utilisateur
    */
   private sanitizeUser(user: User): Omit<User, 'password'> {
-    const { password, ...sanitized } = user;
+    const { password: _password, ...sanitized } = user;
     return sanitized;
   }
 
