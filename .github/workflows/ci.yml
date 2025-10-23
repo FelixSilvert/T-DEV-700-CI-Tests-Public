@@ -244,18 +244,7 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🧪 Run unit tests
-        run: npm run test
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_DATABASE: test_db
-          DB_USER: test_user
-          DB_PASSWORD: test_password
-          JWT_SECRET: test-secret-key-for-ci-testing-only
-          NODE_ENV: test
-
-      - name: 📊 Generate test coverage
+      - name: 🧪 Run tests with coverage
         run: npm run test:cov
         env:
           DB_HOST: localhost
@@ -265,36 +254,6 @@ jobs:
           DB_PASSWORD: test_password
           JWT_SECRET: test-secret-key-for-ci-testing-only
           NODE_ENV: test
-
-      - name: 🔍 Debug - List coverage files
-        run: |
-          echo "📂 Current directory:"
-          pwd
-          echo ""
-          echo "📂 Contents of current directory:"
-          ls -la
-          echo ""
-          if [ -d coverage ]; then
-            echo "📂 Contents of coverage directory:"
-            ls -la coverage/
-          else
-            echo "❌ No coverage directory found"
-          fi
-
-      - name: ✅ Check coverage thresholds
-        run: |
-          echo "🎯 Coverage thresholds configured:"
-          echo "  - Branches: 80%"
-          echo "  - Functions: 80%"
-          echo "  - Lines: 85%"
-          echo "  - Statements: 85%"
-          echo ""
-          echo "ℹ️ Jest will fail if any threshold is not met"
-          if [ ! -f coverage/coverage-summary.json ]; then
-            echo "❌ Coverage report not found!"
-            exit 1
-          fi
-          echo "✅ Coverage thresholds validated!"
 
       - name: 📦 Upload coverage artifacts
         uses: actions/upload-artifact@v4
