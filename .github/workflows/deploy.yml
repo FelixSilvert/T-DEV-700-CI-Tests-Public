@@ -1,11 +1,12 @@
 name: Deploy to Production
 
+# Désactivé temporairement - nécessite des secrets
 on:
-  push:
-    branches:
-      - main
-      - ci/config  # Pour tester le workflow
-  workflow_dispatch:  # Permet de déclencher manuellement
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #     - ci/config
 
 jobs:
   deploy:

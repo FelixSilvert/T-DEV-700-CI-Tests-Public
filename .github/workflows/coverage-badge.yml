@@ -1,11 +1,12 @@
 name: Coverage Badge
 
+# Désactivé temporairement - nécessite des secrets
 on:
-  push:
-    branches:
-      - main
-      - develop
   workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #     - develop
 
 jobs:
   coverage:
