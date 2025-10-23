@@ -1,0 +1,144 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+      - ci/config  # Pour tester le workflow
+  workflow_dispatch:  # Permet de déclencher manuellement
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create .env file
+        run: |
+          cat << EOF > .env
+          # Database
+          DB_HOST=${{ vars.DB_HOST || 'trinity-db' }}
+          DB_INTERNAL_PORT=${{ vars.DB_INTERNAL_PORT || '5432' }}
+          DB_EXTERNAL_PORT=${{ vars.DB_EXTERNAL_PORT || '5433' }}
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+
+          # Backend
+          BACKEND_HOST=${{ vars.BACKEND_HOST || 'trinity-back' }}
+          BACKEND_INTERNAL_PORT=${{ vars.BACKEND_INTERNAL_PORT || '3001' }}
+          BACKEND_EXTERNAL_PORT=${{ vars.BACKEND_EXTERNAL_PORT || '3001' }}
+          BACKEND_URL=http://${{ vars.BACKEND_HOST || 'trinity-back' }}:${{ vars.BACKEND_INTERNAL_PORT || '3001' }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+
+          # Frontend
+          FRONTEND_HOST=${{ vars.FRONTEND_HOST || 'trinity-front' }}
+          FRONTEND_INTERNAL_PORT=${{ vars.FRONTEND_INTERNAL_PORT || '3000' }}
+          FRONTEND_EXTERNAL_PORT=${{ vars.FRONTEND_EXTERNAL_PORT || '3000' }}
+          NEXT_PUBLIC_API_URL=http://${{ secrets.SERVER_NAME }}/api
+
+          # Nginx
+          NGINX_HOST=${{ vars.NGINX_HOST || 'trinity-proxy' }}
+          NGINX_INTERNAL_PORT=${{ vars.NGINX_INTERNAL_PORT || '80' }}
+          NGINX_EXTERNAL_PORT=${{ vars.NGINX_EXTERNAL_PORT || '80' }}
+
+          # Network
+          DOCKER_NETWORK_SUBNET=${{ vars.DOCKER_NETWORK_SUBNET || '172.28.0.0/16' }}
+          DOCKER_NETWORK_GATEWAY=${{ vars.DOCKER_NETWORK_GATEWAY || '172.28.0.1' }}
+          SERVER_NAME=${{ secrets.SERVER_NAME }}
+
+          # Environment
+          NODE_ENV=production
+          EOF
+
+      - name: Create server/.env file
+        run: |
+          cat << EOF > server/.env
+          # Database
+          DB_HOST=${{ vars.DB_HOST || 'trinity-db' }}
+          DB_PORT=${{ vars.DB_INTERNAL_PORT || '5432' }}
+          DB_DATABASE=${{ secrets.DB_DATABASE }}
+          DB_USER=${{ secrets.DB_USER }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+
+          # Backend
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=${{ vars.BACKEND_INTERNAL_PORT || '3001' }}
+
+          # Admin seeder
+          ADMIN_EMAIL=${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_FIRST_NAME=${{ secrets.ADMIN_FIRST_NAME }}
+          ADMIN_LAST_NAME=${{ secrets.ADMIN_LAST_NAME }}
+          ADMIN_PHONE_NUMBER=${{ secrets.ADMIN_PHONE_NUMBER }}
+
+          # Environment
+          NODE_ENV=production
+          EOF
+
+      - name: Create client/.env file
+        run: |
+          cat << EOF > client/.env
+          # Frontend
+          NODE_ENV=production
+          PORT=${{ vars.FRONTEND_INTERNAL_PORT || '3000' }}
+          NEXT_PUBLIC_API_URL=http://${{ secrets.SERVER_NAME }}/api
+          BACKEND_URL=http://${{ vars.BACKEND_HOST || 'trinity-back' }}:${{ vars.BACKEND_INTERNAL_PORT || '3001' }}
+          NEXT_PUBLIC_LOG_LEVEL=info
+          EOF
+
+      - name: Build Docker images
+        run: |
+          docker compose -f docker-compose.prod.yml build
+
+      - name: Show built images
+        run: docker images | grep trinity
+
+      - name: Save Docker images
+        run: |
+          docker save trinity-front:latest -o trinity-front.tar
+          docker save trinity-back:latest -o trinity-back.tar
+          docker save trinity-proxy:latest -o trinity-proxy.tar
+
+      # Si vous avez un serveur distant, ajoutez ces étapes :
+      # - name: Copy files to server
+      #   uses: appleboy/scp-action@master
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     source: "docker-compose.prod.yml,.env,*.tar"
+      #     target: "/opt/trinity"
+
+      # - name: Deploy on server
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.SSH_HOST }}
+      #     username: ${{ secrets.SSH_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     script: |
+      #       cd /opt/trinity
+      #       docker load -i trinity-front.tar
+      #       docker load -i trinity-back.tar
+      #       docker load -i trinity-proxy.tar
+      #       docker compose -f docker-compose.prod.yml down
+      #       docker compose -f docker-compose.prod.yml up -d
+      #       docker compose -f docker-compose.prod.yml exec -T back npm run seed
+
+      - name: Clean up
+        if: always()
+        run: |
+          rm -f .env server/.env client/.env
+          rm -f *.tar
+
+      - name: Build Summary
+        run: |
+          echo "✅ Build completed successfully"
+          echo "📦 Docker images built:"
+          docker images | grep trinity || true

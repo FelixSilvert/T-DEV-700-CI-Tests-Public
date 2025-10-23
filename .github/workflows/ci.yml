@@ -1,0 +1,399 @@
+name: CI Pipeline
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+      - 'fix/**'
+      - 'ci/**'
+  workflow_dispatch:
+
+# Annule les workflows en cours si un nouveau push est fait
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🔍 JOB 1: Analyse des changements
+  # ═══════════════════════════════════════════════════════════════════════════
+  detect-changes:
+    name: 🔍 Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      docker: ${{ steps.filter.outputs.docker }}
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔍 Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'server/**'
+              - 'package*.json'
+            frontend:
+              - 'client/**'
+              - 'package*.json'
+            docker:
+              - '**/Dockerfile*'
+              - 'docker-compose*.yml'
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🎨 JOB 2: Lint Backend
+  # ═══════════════════════════════════════════════════════════════════════════
+  lint-backend:
+    name: 🎨 Lint Backend
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    defaults:
+      run:
+        working-directory: ./server
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎨 Run ESLint
+        run: npm run lint
+        continue-on-error: false
+
+      - name: ✅ Lint completed
+        run: echo "✅ Backend linting passed successfully"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🎨 JOB 3: Lint Frontend
+  # ═══════════════════════════════════════════════════════════════════════════
+  lint-frontend:
+    name: 🎨 Lint Frontend
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
+    defaults:
+      run:
+        working-directory: ./client
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🎨 Run ESLint
+        run: npm run lint
+        continue-on-error: false
+
+      - name: ✅ Lint completed
+        run: echo "✅ Frontend linting passed successfully"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🏗️ JOB 4: Build Backend
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-backend:
+    name: 🏗️ Build Backend
+    runs-on: ubuntu-latest
+    needs: lint-backend
+    if: |
+      always() && 
+      needs.detect-changes.outputs.backend == 'true' &&
+      (needs.lint-backend.result == 'success' || needs.lint-backend.result == 'skipped')
+    defaults:
+      run:
+        working-directory: ./server
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build application
+        run: npm run build
+
+      - name: 📦 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: server/dist
+          retention-days: 7
+
+      - name: ✅ Build completed
+        run: echo "✅ Backend build completed successfully"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🏗️ JOB 5: Build Frontend
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-frontend:
+    name: 🏗️ Build Frontend
+    runs-on: ubuntu-latest
+    needs: lint-frontend
+    if: |
+      always() && 
+      needs.detect-changes.outputs.frontend == 'true' &&
+      (needs.lint-frontend.result == 'success' || needs.lint-frontend.result == 'skipped')
+    defaults:
+      run:
+        working-directory: ./client
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_URL: http://localhost/api
+
+      - name: 📦 Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: client/.next
+          retention-days: 7
+
+      - name: ✅ Build completed
+        run: echo "✅ Frontend build completed successfully"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🧪 JOB 6: Test Backend
+  # ═══════════════════════════════════════════════════════════════════════════
+  test-backend:
+    name: 🧪 Test Backend
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
+    defaults:
+      run:
+        working-directory: ./server
+    
+    # Service PostgreSQL pour les tests
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🧪 Run unit tests
+        run: npm run test
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: test_db
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          JWT_SECRET: test-secret-key-for-ci-testing-only
+          NODE_ENV: test
+
+      - name: 📊 Generate test coverage
+        run: npm run test:cov
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_DATABASE: test_db
+          DB_USER: test_user
+          DB_PASSWORD: test_password
+          JWT_SECRET: test-secret-key-for-ci-testing-only
+          NODE_ENV: test
+
+      - name: ✅ Check coverage thresholds
+        run: |
+          echo "🎯 Coverage thresholds configured:"
+          echo "  - Branches: 80%"
+          echo "  - Functions: 80%"
+          echo "  - Lines: 85%"
+          echo "  - Statements: 85%"
+          echo ""
+          echo "ℹ️ Jest will fail if any threshold is not met"
+          if [ ! -f coverage/coverage-summary.json ]; then
+            echo "❌ Coverage report not found!"
+            exit 1
+          fi
+          echo "✅ Coverage thresholds validated!"
+
+      - name: 📦 Upload coverage artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: server/coverage
+          retention-days: 30
+
+      - name: 📊 Coverage Summary
+        run: |
+          echo "## 📊 Backend Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat coverage/coverage-summary.json 2>/dev/null || echo "Coverage summary not available"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: ✅ Tests completed
+        run: echo "✅ Backend tests passed successfully"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # 🐳 JOB 7: Build Docker Images (optionnel)
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-docker:
+    name: 🐳 Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    if: |
+      always() &&
+      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
+      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🏗️ Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: false
+          tags: trinity-back:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🏗️ Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: false
+          tags: trinity-front:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 🏗️ Build Nginx Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nginx
+          file: ./nginx/Dockerfile
+          push: false
+          tags: trinity-proxy:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: ✅ Docker build completed
+        run: echo "✅ All Docker images built successfully"
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ✅ JOB 8: Final Status Check
+  # ═══════════════════════════════════════════════════════════════════════════
+  ci-status:
+    name: ✅ CI Status
+    runs-on: ubuntu-latest
+    needs: [lint-backend, lint-frontend, build-backend, build-frontend, test-backend, build-docker]
+    if: always()
+    
+    steps:
+      - name: 📊 Check job results
+        run: |
+          echo "## 🎯 CI Pipeline Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint Backend | ${{ needs.lint-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Lint Frontend | ${{ needs.lint-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Backend | ${{ needs.build-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Frontend | ${{ needs.build-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Backend | ${{ needs.test-backend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Docker | ${{ needs.build-docker.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: ✅ All checks passed
+        if: |
+          needs.lint-backend.result == 'success' &&
+          needs.lint-frontend.result == 'success' &&
+          needs.build-backend.result == 'success' &&
+          needs.build-frontend.result == 'success' &&
+          needs.test-backend.result == 'success' &&
+          needs.build-docker.result == 'success'
+        run: |
+          echo "✅ All CI checks passed successfully!"
+          echo "🚀 Ready for deployment"
+
+      - name: ❌ Some checks failed
+        if: |
+          needs.lint-backend.result == 'failure' ||
+          needs.lint-frontend.result == 'failure' ||
+          needs.build-backend.result == 'failure' ||
+          needs.build-frontend.result == 'failure' ||
+          needs.test-backend.result == 'failure' ||
+          needs.build-docker.result == 'failure'
+        run: |
+          echo "❌ Some CI checks failed"
+          echo "Please review the failed jobs above"
+          exit 1

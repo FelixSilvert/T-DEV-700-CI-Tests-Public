@@ -1,0 +1,79 @@
+name: Commit Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+    branches:
+      - main
+      - develop
+
+jobs:
+  commitlint:
+    name: 📝 Validate Commit Messages
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📝 Get commit messages
+        id: get-commits
+        run: |
+          echo "Checking commits in this PR..."
+          git log --pretty=format:"%s" origin/${{ github.base_ref }}..${{ github.sha }} > commits.txt
+          cat commits.txt
+
+      - name: ✅ Validate commit format
+        run: |
+          # Regex pattern for conventional commits
+          # Format: Type(scope): description
+          # Type must start with capital letter: Feat, Fix, Docs, etc.
+          PATTERN='^(Feat|Fix|Docs|Style|Refactor|Perf|Test|Chore|Build|Ci|Revert)(\([a-z-]+\))?: .{1,50}$'
+          
+          echo "🔍 Validating commit messages..."
+          echo ""
+          
+          INVALID=0
+          while IFS= read -r commit; do
+            if [[ ! "$commit" =~ $PATTERN ]]; then
+              echo "❌ Invalid: $commit"
+              INVALID=1
+            else
+              echo "✅ Valid: $commit"
+            fi
+          done < commits.txt
+          
+          echo ""
+          if [ $INVALID -eq 1 ]; then
+            echo "❌ Some commit messages don't follow the convention!"
+            echo ""
+            echo "📋 Expected format:"
+            echo "   Type(scope): description"
+            echo ""
+            echo "📖 Valid types (first letter uppercase):"
+            echo "   Feat, Fix, Docs, Style, Refactor, Perf, Test, Chore, Build, Ci, Revert"
+            echo ""
+            echo "✨ Examples:"
+            echo "   Feat: add user authentication"
+            echo "   Fix(api): resolve CORS issue"
+            echo "   Docs: update README"
+            echo ""
+            echo "📚 See Convention.md for more details"
+            exit 1
+          else
+            echo "✅ All commit messages are valid!"
+          fi
+
+      - name: 📊 Summary
+        if: success()
+        run: |
+          echo "## ✅ Commit Messages Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All commit messages follow the project's conventions!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Commits in this PR:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat commits.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
