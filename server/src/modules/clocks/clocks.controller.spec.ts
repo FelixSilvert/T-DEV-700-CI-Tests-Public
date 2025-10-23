@@ -6,12 +6,29 @@ describe("ClocksController", () => {
   let controller: ClocksController;
 
   beforeEach(async () => {
+    const mockClocksService = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ClocksController],
-      providers: [ClocksService],
+      providers: [
+        {
+          provide: ClocksService,
+          useValue: mockClocksService,
+        },
+      ],
     }).compile();
 
     controller = module.get<ClocksController>(ClocksController);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it("should be defined", () => {
