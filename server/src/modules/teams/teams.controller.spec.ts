@@ -6,12 +6,29 @@ describe("TeamsController", () => {
   let controller: TeamsController;
 
   beforeEach(async () => {
+    const mockTeamsService = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [TeamsController],
-      providers: [TeamsService],
+      providers: [
+        {
+          provide: TeamsService,
+          useValue: mockTeamsService,
+        },
+      ],
     }).compile();
 
     controller = module.get<TeamsController>(TeamsController);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it("should be defined", () => {
