@@ -1,0 +1,60 @@
+# ===== Stage 1: Dependencies =====
+FROM node:22-alpine AS deps
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production && \
+    npm cache clean --force
+
+# ===== Stage 2: Builder =====
+FROM node:22-alpine AS builder
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies for building)
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build the application (if using TypeScript)
+RUN npm run build
+
+# ===== Stage 3: Production =====
+FROM node:22-alpine
+
+WORKDIR /usr/src/app
+
+# Create a non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy production dependencies from deps stage
+COPY --from=deps --chown=nodejs:nodejs /usr/src/app/node_modules ./node_modules
+
+# Copy built application from builder stage (if exists)
+COPY --from=builder --chown=nodejs:nodejs /usr/src/app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /usr/src/app/package*.json ./
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Use non-root user
+USER nodejs
+
+# Expose the application port
+EXPOSE 3001
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3001/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start the application
+CMD ["npm", "run", "start:prod"]
