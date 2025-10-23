@@ -1,5 +1,6 @@
 name: Commit Lint
 
+# Désactivé - seulement pour les PRs vers main/develop
 on:
   pull_request:
     types: [opened, synchronize, reopened, edited]
