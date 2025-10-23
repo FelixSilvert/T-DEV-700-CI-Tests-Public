@@ -266,6 +266,21 @@ jobs:
           JWT_SECRET: test-secret-key-for-ci-testing-only
           NODE_ENV: test
 
+      - name: 🔍 Debug - List coverage files
+        run: |
+          echo "📂 Current directory:"
+          pwd
+          echo ""
+          echo "📂 Contents of current directory:"
+          ls -la
+          echo ""
+          if [ -d coverage ]; then
+            echo "📂 Contents of coverage directory:"
+            ls -la coverage/
+          else
+            echo "❌ No coverage directory found"
+          fi
+
       - name: ✅ Check coverage thresholds
         run: |
           echo "🎯 Coverage thresholds configured:"
