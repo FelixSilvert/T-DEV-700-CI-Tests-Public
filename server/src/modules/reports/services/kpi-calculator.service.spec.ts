@@ -603,22 +603,22 @@ describe("KpiCalculatorService", () => {
     it("should handle multiple users absences", () => {
       const user1 = createMockUser("1");
       const user2 = createMockUser("2");
-      // Based on timezone offset, this creates 4 working days
+      // 15-17 Jan 2024 = 3 working days (Mon, Tue, Wed)
       const from = new Date("2024-01-15T00:00:00Z");
       const to = new Date("2024-01-17T23:59:59Z");
 
       user1.clocks = [
-        createClock(ClockType.ARRIVAL, new Date("2024-01-15T09:00:00Z"), "1"), // Present 1 day, absent 3 = 3 absences
+        createClock(ClockType.ARRIVAL, new Date("2024-01-15T09:00:00Z"), "1"), // Present 1 day, absent 2 = 2 absences
       ];
 
-      user2.clocks = []; // Absent all 4 days = 4 absences
+      user2.clocks = []; // Absent all 3 days = 3 absences
 
       const result = service.calculateAbsences([user1, user2], from, to);
 
-      expect(result.value).toBe(7); // 3 + 4
+      expect(result.value).toBe(5); // 2 + 3
       expect(result.details).toBeDefined();
-      expect(result.details!["1"]).toBe(3);
-      expect(result.details!["2"]).toBe(4);
+      expect(result.details!["1"]).toBe(2);
+      expect(result.details!["2"]).toBe(3);
     });
   });
 
